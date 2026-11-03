@@ -179,6 +179,15 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setNotice("");
       setError("");
     }
+    if (lastEvent.event === "room_closed") {
+      resetStream();
+      setStatus("closed");
+      setCaptions([]);
+      setAnswer("");
+      setQuestion("");
+      setAskedBatch("");
+      setError("This interview room is closed. Its transcript, answers, and unshared resume data were deleted.");
+    }
     if (lastEvent.event === "error") setError(String(lastEvent.message));
   }, [lastEvent, flushStream, resetStream, scheduleFlush, follow]);
 

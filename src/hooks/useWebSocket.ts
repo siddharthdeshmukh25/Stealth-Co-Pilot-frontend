@@ -14,6 +14,7 @@ export function useWebSocket(sessionId: string) {
 
   useEffect(() => {
     let stopped = false;
+    let roomClosed = false;
     let retry: ReturnType<typeof setTimeout>;
     let delay = 700;
     const connect = () => {
@@ -22,8 +23,14 @@ export function useWebSocket(sessionId: string) {
       const ws = new WebSocket(`${base}/ws/${sessionId}`);
       socket.current = ws;
       ws.onopen = () => { delay = 700; setConnected(true); };
-      ws.onmessage = (message) => { try { setLastEvent(JSON.parse(message.data)); } catch { /* Ignore malformed frames. */ } };
-      ws.onclose = () => { setConnected(false); if (!stopped) { retry = setTimeout(connect, delay); delay = Math.min(delay * 1.8, 8000); } };
+      ws.onmessage = (message) => {
+        try {
+          const event = JSON.parse(message.data) as SocketEvent;
+          if (event.event === "room_closed") roomClosed = true;
+          setLastEvent(event);
+        } catch { /* Ignore malformed frames. */ }
+      };
+      ws.onclose = () => { setConnected(false); if (!stopped && !roomClosed) { retry = setTimeout(connect, delay); delay = Math.min(delay * 1.8, 8000); } };
       ws.onerror = () => ws.close();
     };
     connect();
