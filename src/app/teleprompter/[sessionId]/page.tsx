@@ -35,6 +35,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [answer, setAnswer] = useState("");
   const [question, setQuestion] = useState("");
+  const [askedBatch, setAskedBatch] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [fontSize, setFontSize] = useState(17);
@@ -128,11 +129,13 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       const restored = Array.isArray(lastEvent.captions) ? lastEvent.captions.map(String) : [];
       if (restored.length) setCaptions(restored.map((text, index) => ({ id: Date.now() + index, text })));
       if (lastEvent.question) setQuestion(String(lastEvent.question));
+      if (lastEvent.batch) setAskedBatch(String(lastEvent.batch));
       if (lastEvent.answer) setAnswer(String(lastEvent.answer));
     }
     if (lastEvent.event === "transcription_empty") setError(String(lastEvent.message || "No clear speech was detected."));
     if (lastEvent.event === "question_detected") {
       setQuestion(String(lastEvent.text || ""));
+      setAskedBatch(String(lastEvent.batch || ""));
       setNotice("");
     }
     if (lastEvent.event === "answer_started") {
@@ -152,6 +155,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setNotice("");
       setCodeOpen(false);
       setQuestion(String(lastEvent.text || ""));
+      if (lastEvent.batch) setAskedBatch(String(lastEvent.batch));
       follow(true);
     }
     if (lastEvent.event === "answer_token") {
@@ -171,6 +175,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setCaptions([]);
       setAnswer("");
       setQuestion("");
+      setAskedBatch("");
       setNotice("");
       setError("");
     }
@@ -378,9 +383,11 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           {question ? (
             <div className="flex shrink-0 items-start gap-2 border-b border-border/80 bg-primary/[0.04] px-4 py-2.5">
               <span className="mt-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
-                Asked
+                This batch
               </span>
-              <p className="max-h-28 min-w-0 flex-1 overflow-y-auto whitespace-pre-line text-xs leading-5 text-muted-foreground">{question}</p>
+              <p className="max-h-32 min-w-0 flex-1 overflow-y-auto whitespace-pre-line border-l-2 border-primary/40 pl-2 text-xs leading-5 text-muted-foreground">
+                {askedBatch || question}
+              </p>
             </div>
           ) : null}
 
