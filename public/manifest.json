@@ -1,0 +1,9 @@
+{
+  "name": "Stealth Interview Co-Pilot",
+  "short_name": "Co-Pilot",
+  "description": "Local-first interview preparation companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090D16",
+  "theme_color": "#090D16"
+}
