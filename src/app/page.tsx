@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bot, Captions, CodeXml, KeyRound, Laptop, Smartphone, Sparkles } from "lucide-react";
-
-const FRONTEND_REPO = "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot-frontend";
-const BACKEND_REPO = "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot-interview-backend";
+import { ArrowRight, Bot, Captions, KeyRound, Laptop, Smartphone, Sparkles } from "lucide-react";
 
 const FEATURES = [
   {
@@ -80,7 +77,6 @@ export default function HomePage() {
             <a className="transition-colors hover:text-foreground" href="#features">Features</a>
             <a className="transition-colors hover:text-foreground" href="#how">How it works</a>
             <a className="transition-colors hover:text-foreground" href="#code">Pair a phone</a>
-            <a className="transition-colors hover:text-foreground" href="#source">Source</a>
           </nav>
           <a
             href="#code"
@@ -93,7 +89,9 @@ export default function HomePage() {
 
       <main id="top">
         <section className="relative overflow-hidden border-b border-border">
-          <div className="pointer-events-none absolute -top-40 left-1/2 h-96 w-[46rem] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.12),transparent_58%)]" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.13] [background-image:linear-gradient(rgba(148,163,184,0.22)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.22)_1px,transparent_1px)] [background-size:52px_52px] [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
+          <div className="pointer-events-none absolute -right-28 top-16 h-80 w-80 rounded-full bg-cyan-500/10 blur-[110px]" />
           <div className="relative mx-auto grid w-full max-w-6xl gap-14 px-5 py-20 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:py-28">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[.18em] text-emerald-400">
@@ -147,8 +145,8 @@ export default function HomePage() {
             </div>
 
             <div className="relative mx-auto w-full max-w-sm">
-              <div className="absolute inset-x-6 -bottom-6 h-24 rounded-[2rem] bg-emerald-500/10 blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card">
+              <div className="absolute -inset-5 rounded-[2.5rem] bg-gradient-to-br from-emerald-400/15 via-cyan-400/5 to-transparent blur-2xl" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-card/95 shadow-[0_28px_90px_-35px_rgba(16,185,129,0.34)] backdrop-blur">
                 <div className="flex items-center justify-between border-b border-border px-5 py-3 text-[11px] uppercase tracking-[.16em] text-muted-foreground">
                   <span className="flex items-center gap-2 text-emerald-400">
                     <span className="size-1.5 rounded-full bg-emerald-400" /> Live
@@ -189,7 +187,7 @@ export default function HomePage() {
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-2xl border border-border bg-card p-5">
+              <div key={title} className="group rounded-2xl border border-border bg-gradient-to-b from-card to-card/70 p-5 shadow-[0_16px_44px_-36px_rgba(16,185,129,0.55)] transition duration-200 hover:-translate-y-1 hover:border-emerald-400/30 hover:shadow-[0_22px_48px_-32px_rgba(16,185,129,0.45)]">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
                   <Icon className="size-5" />
                 </span>
@@ -205,7 +203,7 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Three steps, one minute</h2>
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               {STEPS.map((step) => (
-                <div key={step.n} className="rounded-2xl border border-border bg-background p-6">
+                <div key={step.n} className="rounded-2xl border border-border bg-gradient-to-br from-background via-background to-emerald-400/[0.035] p-6 shadow-[0_18px_48px_-40px_rgba(16,185,129,0.45)]">
                   <span className="font-mono text-xs tracking-[.2em] text-emerald-400">{step.n}</span>
                   <h3 className="mt-3 text-base font-semibold">{step.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p>
@@ -221,49 +219,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="source" className="mx-auto w-full max-w-6xl px-5 py-20">
-          <div className="grid gap-6 rounded-3xl border border-border bg-card p-8 md:grid-cols-[1.2fr_.8fr] md:items-center">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">Open code, your hardware</h2>
-              <p className="mt-3 text-[15px] leading-7 text-muted-foreground">
-                The phone app is this Next.js site, the API is FastAPI, and the desktop client is a small Python EXE. Read
-                both repos, run the stack locally, or point the app at your own backend.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <a
-                href={FRONTEND_REPO}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
-              >
-                <span className="flex items-center gap-2"><CodeXml className="size-4" /> Frontend source</span>
-                <ArrowRight className="size-4 text-muted-foreground" />
-              </a>
-              <a
-                href={BACKEND_REPO}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
-              >
-                <span className="flex items-center gap-2"><CodeXml className="size-4" /> Backend source</span>
-                <ArrowRight className="size-4 text-muted-foreground" />
-              </a>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-5 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>Stealth Interview Co-Pilot · captions and AI answers, on your phone.</p>
           <div className="flex items-center gap-5">
-            <a className="transition-colors hover:text-foreground" href={FRONTEND_REPO} target="_blank" rel="noreferrer">
-              Frontend
-            </a>
-            <a className="transition-colors hover:text-foreground" href={BACKEND_REPO} target="_blank" rel="noreferrer">
-              Backend
-            </a>
             <a className="transition-colors hover:text-foreground" href="#code">
               Pair a phone
             </a>

@@ -56,6 +56,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const latestQuestion = useRef("");
   const latestAnswer = useRef("");
   const currentAnswerQuestion = useRef("");
+  const optimisticallyArchivedAnswer = useRef("");
 
   latestQuestion.current = question;
   latestAnswer.current = answer;
@@ -145,7 +146,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     if (lastEvent.event === "answer_started") {
       // Keep the previous answer in history so only the newest one stays inline.
       const previous = latestAnswer.current.trim();
-      if (previous) {
+      if (previous && optimisticallyArchivedAnswer.current !== previous) {
         const entry: HistoryEntry = {
           id: Date.now(),
           question: currentAnswerQuestion.current || latestQuestion.current || "Previous question",
@@ -153,6 +154,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         };
         setHistory((entries) => [entry, ...entries].slice(0, 30));
       }
+      optimisticallyArchivedAnswer.current = "";
       currentAnswerQuestion.current = String(lastEvent.text || latestQuestion.current || "");
       resetStream();
       setAnswer("");
@@ -195,7 +197,10 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setAskedBatch("");
       setError("This interview room is closed. Its transcript, answers, and unshared resume data were deleted.");
     }
-    if (lastEvent.event === "error") setError(String(lastEvent.message));
+    if (lastEvent.event === "error") {
+      setStatus("listening");
+      setError(String(lastEvent.message));
+    }
   }, [lastEvent, flushStream, resetStream, scheduleFlush, follow]);
 
   useEffect(() => {
@@ -223,6 +228,24 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
 
   const askAI = (action: "standard" | "explain_deeper" | "code_example" = "standard", topic = "") => {
     if (!connected || !captions.length) return;
+    const previous = latestAnswer.current.trim();
+    if (previous) {
+      setHistory((entries) => [
+        {
+          id: Date.now(),
+          question: currentAnswerQuestion.current || latestQuestion.current || "Previous question",
+          answer: previous,
+        },
+        ...entries,
+      ].slice(0, 30));
+      optimisticallyArchivedAnswer.current = previous;
+    }
+    latestAnswer.current = "";
+    setAnswer("");
+    setAskedBatch("");
+    setQuestion("");
+    setError("");
+    setStatus("thinking");
     setNotice("");
     follow(true);
     pendingCode.current = action === "code_example";
