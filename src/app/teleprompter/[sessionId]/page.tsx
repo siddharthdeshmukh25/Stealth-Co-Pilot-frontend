@@ -8,6 +8,7 @@ import {
   Mic,
   Minus,
   Plus,
+  Settings2,
   Sparkles,
   Sun,
   UserRound,
@@ -26,6 +27,12 @@ type HistoryEntry = { id: number; question: string; answer: string };
 const MIN_FONT = 15;
 const MAX_FONT = 24;
 const FONT_KEY = "copilot:font-size";
+const MODEL_KEY = "copilot:answer-model";
+const CONTEXT_KEY = "copilot:additional-context";
+
+function backendHttpBase() {
+  return (process.env.NEXT_PUBLIC_BACKEND_URL || `http://${window.location.hostname}:8000`).replace(/\/$/, "");
+}
 
 export default function TeleprompterPage({ params }: { params: { sessionId: string } }) {
   const { sessionId } = params;
@@ -43,6 +50,13 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const [historyOpen, setHistoryOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeTopic, setCodeTopic] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [modelOptions, setModelOptions] = useState<{ id: string; owned_by: string; context_window: number | null }[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [additionalContext, setAdditionalContext] = useState("");
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+  const [modelRefresh, setModelRefresh] = useState(0);
 
   const answerBox = useRef<HTMLDivElement>(null);
   const answerContent = useRef<HTMLDivElement>(null);
@@ -118,7 +132,41 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   useEffect(() => {
     const stored = Number(window.localStorage.getItem(FONT_KEY));
     if (stored >= MIN_FONT && stored <= MAX_FONT) setFontSize(stored);
-  }, []);
+    setSelectedModel(window.localStorage.getItem(`${MODEL_KEY}:${sessionId}`) || "");
+    setAdditionalContext(window.localStorage.getItem(`${CONTEXT_KEY}:${sessionId}`) || "");
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!settingsOpen || modelOptions.length) return;
+    let active = true;
+    setSettingsLoading(true);
+    setSettingsError("");
+    fetch(`${backendHttpBase()}/api/ai/models`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || "Could not load Groq models.");
+        return data;
+      })
+      .then((data) => {
+        if (!active) return;
+        const options = Array.isArray(data.models) ? data.models : [];
+        setModelOptions(options);
+        const saved = window.localStorage.getItem(`${MODEL_KEY}:${sessionId}`) || "";
+        const initial = options.find((item: { id: string }) => item.id === saved)?.id
+          || options.find((item: { id: string }) => item.id === data.default_model)?.id
+          || options[0]?.id
+          || "";
+        setSelectedModel(initial);
+        if (initial) window.localStorage.setItem(`${MODEL_KEY}:${sessionId}`, initial);
+      })
+      .catch((err) => {
+        if (active) setSettingsError(err instanceof Error ? err.message : "Could not load Groq models.");
+      })
+      .finally(() => {
+        if (active) setSettingsLoading(false);
+      });
+    return () => { active = false; };
+  }, [settingsOpen, modelOptions.length, modelRefresh, sessionId]);
 
   useEffect(() => {
     if (!lastEvent) return;
@@ -249,11 +297,20 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     setNotice("");
     follow(true);
     pendingCode.current = action === "code_example";
+    const answerPreferences = {
+      ...(selectedModel ? { model: selectedModel } : {}),
+      ...(additionalContext.trim() ? { additional_context: additionalContext.trim() } : {}),
+    };
     if (action === "standard") {
-      send({ event: "ask_ai" });
+      send({ event: "ask_ai", ...answerPreferences });
       return;
     }
-    send({ event: "quick_action", action, ...(topic.trim() ? { topic: topic.trim() } : {}) });
+    send({
+      event: "quick_action",
+      action,
+      ...answerPreferences,
+      ...(topic.trim() ? { topic: topic.trim() } : {}),
+    });
   };
 
   const submitCodeTopic = () => {
@@ -408,6 +465,14 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 </span>
               )}
               <button
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Open AI settings"
+                title="AI settings"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Settings2 size={13} aria-hidden="true" />
+              </button>
+              <button
                 onClick={() => setHistoryOpen(true)}
                 disabled={!history.length}
                 aria-label="Open answer history"
@@ -539,6 +604,112 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           />
         </section>
       </div>
+
+      {settingsOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-3 sm:items-center sm:p-6">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-settings-title"
+            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl"
+          >
+            <header className="flex items-center justify-between border-b border-border px-4 py-3.5 sm:px-5">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-primary">
+                  <Settings2 size={16} aria-hidden="true" />
+                </span>
+                <div>
+                  <h2 id="ai-settings-title" className="text-sm font-bold text-foreground">AI answer settings</h2>
+                  <p className="text-[11px] text-muted-foreground">Choose a Groq model and set your speaking style.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSettingsOpen(false)}
+                aria-label="Close AI settings"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </header>
+            <div className="space-y-5 px-4 py-5 sm:px-5">
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label htmlFor="answer-model" className="text-xs font-semibold text-foreground">Groq model</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModelOptions([]);
+                      setModelRefresh((value) => value + 1);
+                    }}
+                    disabled={settingsLoading}
+                    className="text-[11px] font-medium text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+                  >
+                    {settingsLoading ? "Loading models…" : "Refresh models"}
+                  </button>
+                </div>
+                <select
+                  id="answer-model"
+                  value={selectedModel}
+                  onChange={(event) => {
+                    setSelectedModel(event.target.value);
+                    window.localStorage.setItem(`${MODEL_KEY}:${sessionId}`, event.target.value);
+                  }}
+                  disabled={settingsLoading || !modelOptions.length}
+                  className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary/60 disabled:opacity-60"
+                >
+                  {modelOptions.length ? modelOptions.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.id}{model.context_window ? ` · ${Number(model.context_window).toLocaleString()} context` : ""}
+                    </option>
+                  )) : <option value="">{settingsLoading ? "Loading active models…" : "No models loaded"}</option>}
+                </select>
+                {settingsError ? <p role="alert" className="mt-2 text-xs leading-5 text-rose-300">{settingsError}</p> : null}
+                <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                  Active text-generation models from your Groq account. The API key stays on the backend.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="extra-answer-context" className="text-xs font-semibold text-foreground">Extra answer context</label>
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                  Add preferences such as “use simple English”, “keep it under 30 seconds”, or a detail the answer should focus on.
+                </p>
+                <textarea
+                  id="extra-answer-context"
+                  rows={4}
+                  maxLength={3000}
+                  value={additionalContext}
+                  onChange={(event) => {
+                    setAdditionalContext(event.target.value);
+                    window.localStorage.setItem(`${CONTEXT_KEY}:${sessionId}`, event.target.value);
+                  }}
+                  placeholder="Use simple words and answer in 3–4 short sentences…"
+                  className="mt-2 w-full resize-y rounded-xl border border-border bg-card px-3 py-2.5 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/60"
+                />
+                <p className="mt-1 text-right text-[10px] tabular-nums text-muted-foreground">{additionalContext.length}/3000</p>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdditionalContext("");
+                    window.localStorage.removeItem(`${CONTEXT_KEY}:${sessionId}`);
+                  }}
+                  className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Clear extra context
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(false)}
+                  className="h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {historyOpen ? (
         <div className="fixed inset-0 z-50 flex flex-col bg-background">
