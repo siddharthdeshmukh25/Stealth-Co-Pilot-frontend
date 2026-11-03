@@ -33,6 +33,7 @@ const MODEL_KEY = "copilot:answer-model";
 const CONTEXT_KEY = "copilot:additional-context";
 const HISTORY_KEY = "copilot:answer-history";
 const QUESTION_COUNT_KEY = "copilot:question-count";
+const CODING_REQUEST = /\b(write|implement|create|develop|build|solve)\b.{0,140}\b(program|function|method|script|solution|algorithm|snippet|code)\b/i;
 
 function isQuestionCaption(text: string) {
   return text.includes("?") || /\b(what|why|how|when|where|which|who|whose|whom|tell me|explain|describe|walk me through|talk me through|can you|could you|would you|will you|do you|did you|have you|are you|is there|give me|share)\b/i.test(text.trim());
@@ -40,6 +41,10 @@ function isQuestionCaption(text: string) {
 
 function backendHttpBase() {
   return (process.env.NEXT_PUBLIC_BACKEND_URL || `http://${window.location.hostname}:8000`).replace(/\/$/, "");
+}
+
+function shouldAutoFollowAnswer() {
+  return typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
 }
 
 export default function TeleprompterPage({ params }: { params: { sessionId: string } }) {
@@ -257,13 +262,14 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       }
       optimisticallyArchivedAnswer.current = "";
       currentAnswerQuestion.current = String(lastEvent.text || latestQuestion.current || "");
+      pendingCode.current = CODING_REQUEST.test(currentAnswerQuestion.current);
       resetStream();
       setAnswer("");
       setError("");
       setNotice("");
       setQuestion(String(lastEvent.text || ""));
       if (lastEvent.batch) setAskedBatch(String(lastEvent.batch));
-      follow(true);
+      follow(shouldAutoFollowAnswer());
     }
     if (lastEvent.event === "answer_token") {
       streamBuffer.current += String(lastEvent.token);
@@ -405,7 +411,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     setError("");
     setStatus("thinking");
     setNotice("");
-    follow(true);
+    follow(shouldAutoFollowAnswer());
     pendingCode.current = action === "code_example";
     setCodeOpen(action === "code_example" && !topic.trim());
     const answerPreferences = {
