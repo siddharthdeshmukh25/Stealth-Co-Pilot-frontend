@@ -137,7 +137,7 @@ export default function TeleprompterStream({
 
   return (
     <div
-      className="w-full min-w-0 break-words text-left text-foreground [overflow-wrap:break-word] [word-break:normal] [text-size-adjust:100%]"
+      className="w-full min-w-0 break-words text-left text-foreground [overflow-wrap:anywhere] [word-break:normal] [text-size-adjust:100%]"
       style={{ fontSize: `${fontSize}px`, lineHeight: 1.62, whiteSpace: "pre-line" }}
       aria-live="polite"
     >
@@ -171,7 +171,7 @@ export default function TeleprompterStream({
           return (
             <pre
               key={key}
-              className={`overflow-x-auto rounded-lg border border-border bg-muted/50 p-3 font-mono text-[0.82em] leading-6 text-foreground ${index ? "mt-3" : ""}`}
+              className={`max-w-full min-w-0 overflow-x-auto rounded-lg border border-border bg-muted/50 p-3 font-mono text-[0.82em] leading-6 text-foreground ${index ? "mt-3" : ""}`}
             >
               <code>{block.text}</code>
             </pre>

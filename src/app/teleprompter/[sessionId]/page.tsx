@@ -308,7 +308,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setAnswer("");
       setQuestion("");
       setAskedBatch("");
-      setError("This interview room is closed. Its transcript, answers, and unshared resume data were deleted.");
+      setError("Interview ended on the desktop device. This room session is closed, and its transcript and answers were deleted.");
       setHistory([]);
       setHistoryLoaded(false);
       window.localStorage.removeItem(`${HISTORY_KEY}:${sessionId}`);
@@ -330,6 +330,32 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     }
     if (followingRef.current) box.scrollTop = box.scrollHeight;
   }, [answer, revealCode]);
+
+  // Mobile browsers can reflow streamed text after React paints (font sizing,
+  // wrapping, and code blocks). Keep the answer pinned to the latest content
+  // while following, even when its layout changes without a new token.
+  useEffect(() => {
+    const content = answerContent.current;
+    const box = answerBox.current;
+    if (!content || !box || typeof ResizeObserver === "undefined") return;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      if (!followingRef.current) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (pendingCode.current && revealCode()) {
+          pendingCode.current = false;
+          return;
+        }
+        box.scrollTop = box.scrollHeight;
+      });
+    });
+    observer.observe(content);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [answer.length > 0, revealCode]);
 
   useEffect(() => {
     const box = captionBox.current;
@@ -426,6 +452,23 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     const link = document.createElement("a");
     link.href = url;
     link.download = `stealth-interview-${sessionId.slice(0, 8)}.txt`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const downloadTranscript = () => {
+    const lines = captions.map((caption) => (
+      caption.questionNumber ? `Q${caption.questionNumber} - ${caption.text}` : caption.text
+    ));
+    const content = [
+      "STEALTH CO-PILOT - LIVE INTERVIEW TRANSCRIPT",
+      "",
+      lines.length ? lines.join("\n") : "No transcript captions captured.",
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `stealth-transcript-${sessionId.slice(0, 8)}.txt`;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -541,9 +584,21 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               Live transcript
               {connected ? <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" /> : null}
             </p>
-            <span className="rounded-full border border-border bg-background/60 px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-              {captions.length ? `${captions.length} ${captions.length === 1 ? "line" : "lines"}` : "Automatic"}
-            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="rounded-full border border-border bg-background/60 px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                {captions.length ? `${captions.length} ${captions.length === 1 ? "line" : "lines"}` : "Automatic"}
+              </span>
+              <button
+                type="button"
+                onClick={downloadTranscript}
+                disabled={!captions.length}
+                aria-label="Download live transcript"
+                title="Download live transcript"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+              >
+                <Download size={13} aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div
             ref={captionBox}
@@ -616,7 +671,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           ) : null}
         </section>
 
-        <section aria-label="Suggested interview response" className="flex min-h-0 flex-col bg-background">
+        <section aria-label="Suggested interview response" className="flex min-h-0 min-w-0 flex-col bg-background">
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/80 px-4 py-2.5">
             <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               <Sparkles size={13} className="text-primary" aria-hidden="true" />
@@ -688,11 +743,11 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 48;
                 if (atBottom !== followingRef.current) follow(atBottom);
               }}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
+              className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
               aria-live="polite"
             >
               {answer ? (
-                <div ref={answerContent} className="mx-auto max-w-[68ch]">
+                <div ref={answerContent} className="mx-auto w-full min-w-0 max-w-[68ch]">
                   <TeleprompterStream answer={answer} fontSize={fontSize} streaming={status === "streaming"} />
                 </div>
               ) : (
