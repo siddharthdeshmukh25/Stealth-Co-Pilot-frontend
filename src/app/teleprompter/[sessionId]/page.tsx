@@ -159,8 +159,9 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       scheduleFlush();
     }
     if (lastEvent.event === "answer_done") {
-      resetStream();
+      // Commit tokens still waiting in the frame buffer before clearing timers.
       flushStream();
+      resetStream();
       if (lastEvent.status === "truncated") setNotice("The answer hit the length limit. Tap Explain deeper for the rest.");
     }
     if (lastEvent.event === "cleared") {
@@ -379,7 +380,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               <span className="mt-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
                 Asked
               </span>
-              <p className="line-clamp-3 min-w-0 flex-1 text-xs leading-5 text-muted-foreground">{question}</p>
+              <p className="max-h-28 min-w-0 flex-1 overflow-y-auto whitespace-pre-line text-xs leading-5 text-muted-foreground">{question}</p>
             </div>
           ) : null}
 
@@ -417,8 +418,8 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                   <div>
                     <p className="text-sm font-semibold text-foreground">No answer yet</p>
                     <p className="mx-auto mt-1 max-w-[34ch] text-xs leading-5 text-muted-foreground">
-                      Captions are transcribed live. Once a question is asked, press{" "}
-                      <span className="font-medium text-foreground">Ask AI</span> for a short, tailored answer.
+                      Captions are transcribed live. Press <span className="font-medium text-foreground">Ask AI</span>{" "}
+                      for a clear, tailored answer in easy spoken words.
                     </p>
                   </div>
                 </div>
