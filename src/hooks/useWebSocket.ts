@@ -6,8 +6,10 @@ const backendBase = () => process.env.NEXT_PUBLIC_BACKEND_URL || `http://${windo
 
 export function useWebSocket(sessionId: string) {
   const socket = useRef<WebSocket | null>(null);
+  const eventQueue = useRef<SocketEvent[]>([]);
   const [connected, setConnected] = useState(false);
-  const [lastEvent, setLastEvent] = useState<SocketEvent | null>(null);
+  const [eventsVersion, setEventsVersion] = useState(0);
+  const takeEvents = useCallback(() => eventQueue.current.splice(0), []);
   const send = useCallback((message: object) => {
     if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify(message));
   }, []);
@@ -27,7 +29,8 @@ export function useWebSocket(sessionId: string) {
         try {
           const event = JSON.parse(message.data) as SocketEvent;
           if (event.event === "room_closed") roomClosed = true;
-          setLastEvent(event);
+          eventQueue.current.push(event);
+          setEventsVersion((version) => version + 1);
         } catch { /* Ignore malformed frames. */ }
       };
       ws.onclose = () => { setConnected(false); if (!stopped && !roomClosed) { retry = setTimeout(connect, delay); delay = Math.min(delay * 1.8, 8000); } };
@@ -36,6 +39,6 @@ export function useWebSocket(sessionId: string) {
     connect();
     return () => { stopped = true; clearTimeout(retry); socket.current?.close(); socket.current = null; };
   }, [sessionId]);
-  return { connected, lastEvent, send };
+  return { connected, eventsVersion, takeEvents, send };
 }
 

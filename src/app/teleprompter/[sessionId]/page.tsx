@@ -4,9 +4,11 @@ import {
   Bot,
   Captions,
   ChevronDown,
+  Download,
   History,
   Mic,
   Minus,
+  PhoneOff,
   Plus,
   Settings2,
   Sparkles,
@@ -21,7 +23,7 @@ import TeleprompterStream from "@/components/TeleprompterStream";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useWebSocket } from "@/hooks/useWebSocket";
 
-type Caption = { id: number; text: string };
+type Caption = { id: number; text: string; questionNumber?: number };
 type HistoryEntry = { id: number; question: string; answer: string };
 
 const MIN_FONT = 15;
@@ -29,6 +31,12 @@ const MAX_FONT = 24;
 const FONT_KEY = "copilot:font-size";
 const MODEL_KEY = "copilot:answer-model";
 const CONTEXT_KEY = "copilot:additional-context";
+const HISTORY_KEY = "copilot:answer-history";
+const QUESTION_COUNT_KEY = "copilot:question-count";
+
+function isQuestionCaption(text: string) {
+  return text.includes("?") || /\b(what|why|how|when|where|which|who|whose|whom|tell me|explain|describe|walk me through|talk me through|can you|could you|would you|will you|do you|did you|have you|are you|is there|give me|share)\b/i.test(text.trim());
+}
 
 function backendHttpBase() {
   return (process.env.NEXT_PUBLIC_BACKEND_URL || `http://${window.location.hostname}:8000`).replace(/\/$/, "");
@@ -36,7 +44,7 @@ function backendHttpBase() {
 
 export default function TeleprompterPage({ params }: { params: { sessionId: string } }) {
   const { sessionId } = params;
-  const { connected, lastEvent, send } = useWebSocket(sessionId);
+  const { connected, eventsVersion, takeEvents, send } = useWebSocket(sessionId);
   const wakeLock = useWakeLock();
   const [status, setStatus] = useState("listening");
   const [captions, setCaptions] = useState<Caption[]>([]);
@@ -47,7 +55,12 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const [error, setError] = useState("");
   const [fontSize, setFontSize] = useState(17);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const [endCode, setEndCode] = useState("");
+  const [endError, setEndError] = useState("");
+  const [ending, setEnding] = useState(false);
   const [captionFollowing, setCaptionFollowing] = useState(true);
   const [newCaptions, setNewCaptions] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
@@ -65,6 +78,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const captionBox = useRef<HTMLDivElement>(null);
   const followingRef = useRef(true);
   const captionFollowingRef = useRef(true);
+  const questionSequence = useRef(0);
   const pendingCode = useRef(false);
   const [following, setFollowing] = useState(true);
   const streamBuffer = useRef("");
@@ -140,6 +154,24 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   }, [sessionId]);
 
   useEffect(() => {
+    setHistoryLoaded(false);
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(`${HISTORY_KEY}:${sessionId}`) || "[]");
+      setHistory(Array.isArray(saved) ? saved.filter((entry): entry is HistoryEntry => (
+        entry && typeof entry.id === "number" && typeof entry.question === "string" && typeof entry.answer === "string"
+      )).slice(0, 30) : []);
+    } catch {
+      setHistory([]);
+    }
+    setHistoryLoaded(true);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!historyLoaded) return;
+    window.localStorage.setItem(`${HISTORY_KEY}:${sessionId}`, JSON.stringify(history));
+  }, [history, historyLoaded, sessionId]);
+
+  useEffect(() => {
     if (!settingsOpen || modelOptions.length) return;
     let active = true;
     setSettingsLoading(true);
@@ -172,15 +204,33 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   }, [settingsOpen, modelOptions.length, modelRefresh, sessionId]);
 
   useEffect(() => {
-    if (!lastEvent) return;
+    if (!eventsVersion) return;
+    const receivedEvents = takeEvents();
+    for (const lastEvent of receivedEvents) {
     if (lastEvent.event === "status") setStatus(String(lastEvent.state));
     if (lastEvent.event === "caption") {
-      setCaptions((current) => [...current, { id: Date.now() + current.length, text: String(lastEvent.text) }].slice(-40));
+      const text = String(lastEvent.text);
+      if (/welcome to .*interview/i.test(text)) {
+        questionSequence.current = 0;
+        window.localStorage.setItem(`${QUESTION_COUNT_KEY}:${sessionId}`, "0");
+      }
+      const questionNumber = isQuestionCaption(text) ? ++questionSequence.current : undefined;
+      if (questionNumber) window.localStorage.setItem(`${QUESTION_COUNT_KEY}:${sessionId}`, String(questionSequence.current));
+      setCaptions((current) => [...current, { id: Date.now() + current.length, text, questionNumber }].slice(-40));
       setError("");
     }
     if (lastEvent.event === "snapshot") {
       const restored = Array.isArray(lastEvent.captions) ? lastEvent.captions.map(String) : [];
-      if (restored.length) setCaptions(restored.map((text, index) => ({ id: Date.now() + index, text })));
+      if (restored.length) {
+        const savedSequence = Number(window.localStorage.getItem(`${QUESTION_COUNT_KEY}:${sessionId}`) || 0);
+        const restoredQuestions = restored.filter(isQuestionCaption).length;
+        questionSequence.current = Math.max(0, savedSequence - restoredQuestions);
+        setCaptions(restored.map((text, index) => {
+          const questionNumber = isQuestionCaption(text) ? ++questionSequence.current : undefined;
+          return { id: Date.now() + index, text, questionNumber };
+        }));
+        if (questionSequence.current < savedSequence) questionSequence.current = savedSequence;
+      }
       if (lastEvent.question) setQuestion(String(lastEvent.question));
       if (lastEvent.batch) setAskedBatch(String(lastEvent.batch));
       if (lastEvent.answer) {
@@ -211,7 +261,6 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setAnswer("");
       setError("");
       setNotice("");
-      setCodeOpen(false);
       setQuestion(String(lastEvent.text || ""));
       if (lastEvent.batch) setAskedBatch(String(lastEvent.batch));
       follow(true);
@@ -229,14 +278,26 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       else if (typeof lastEvent.answer === "string") setAnswer(lastEvent.answer);
       if (lastEvent.status === "truncated") setNotice("The answer hit the length limit. Tap Explain deeper for the rest.");
     }
+    if (lastEvent.event === "answer_cleared") {
+      resetStream();
+      setAnswer("");
+      latestAnswer.current = "";
+      currentAnswerQuestion.current = "";
+      setError("");
+      setNotice("");
+    }
     if (lastEvent.event === "cleared") {
       resetStream();
       pendingCode.current = false;
       follow(true);
       setCaptions([]);
+      questionSequence.current = 0;
+      window.localStorage.removeItem(`${QUESTION_COUNT_KEY}:${sessionId}`);
       setAnswer("");
       setQuestion("");
       setAskedBatch("");
+      setHistory([]);
+      window.localStorage.removeItem(`${HISTORY_KEY}:${sessionId}`);
       setNotice("");
       setError("");
     }
@@ -248,12 +309,17 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       setQuestion("");
       setAskedBatch("");
       setError("This interview room is closed. Its transcript, answers, and unshared resume data were deleted.");
+      setHistory([]);
+      setHistoryLoaded(false);
+      window.localStorage.removeItem(`${HISTORY_KEY}:${sessionId}`);
+      window.localStorage.removeItem(`${QUESTION_COUNT_KEY}:${sessionId}`);
     }
     if (lastEvent.event === "error") {
       setStatus("listening");
       setError(String(lastEvent.message));
     }
-  }, [lastEvent, flushStream, resetStream, scheduleFlush, follow]);
+    }
+  }, [eventsVersion, takeEvents, flushStream, resetStream, scheduleFlush, follow]);
 
   useEffect(() => {
     const box = answerBox.current;
@@ -315,6 +381,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     setNotice("");
     follow(true);
     pendingCode.current = action === "code_example";
+    setCodeOpen(action === "code_example" && !topic.trim());
     const answerPreferences = {
       ...(selectedModel ? { model: selectedModel } : {}),
       ...(additionalContext.trim() ? { additional_context: additionalContext.trim() } : {}),
@@ -332,9 +399,63 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   };
 
   const submitCodeTopic = () => {
-    setCodeOpen(false);
     askAI("code_example", codeTopic);
     setCodeTopic("");
+  };
+
+  const downloadInterview = () => {
+    const transcript = captions.map((caption) => (
+      caption.questionNumber ? `Q${caption.questionNumber} - ${caption.text}` : caption.text
+    ));
+    const answers = [
+      ...history.slice().reverse(),
+      ...(answer.trim() ? [{ id: Date.now(), question: currentAnswerQuestion.current || question, answer }] : []),
+    ];
+    const content = [
+      "STEALTH CO-PILOT - INTERVIEW NOTES",
+      "",
+      "INTERVIEW TRANSCRIPT",
+      transcript.length ? transcript.join("\n") : "No transcript captions captured.",
+      "",
+      "AI ANSWERS",
+      answers.length
+        ? answers.map((entry, index) => `Q${index + 1} - ${entry.question}\nAnswer: ${entry.answer}`).join("\n\n")
+        : "No AI answers captured.",
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `stealth-interview-${sessionId.slice(0, 8)}.txt`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const endInterview = async () => {
+    const digits = endCode.replace(/\D/g, "");
+    if (digits.length !== 6) {
+      setEndError("Enter the 6-digit pairing code shown in the desktop app.");
+      return;
+    }
+    setEnding(true);
+    setEndError("");
+    try {
+      const response = await fetch(`${backendHttpBase()}/api/session/${sessionId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pairing_code: digits }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || "Could not end this interview.");
+      window.localStorage.removeItem(`${HISTORY_KEY}:${sessionId}`);
+      window.localStorage.removeItem(`${CONTEXT_KEY}:${sessionId}`);
+      window.localStorage.removeItem(`${MODEL_KEY}:${sessionId}`);
+      window.localStorage.removeItem(`${QUESTION_COUNT_KEY}:${sessionId}`);
+      router.push("/");
+    } catch (err) {
+      setEndError(err instanceof Error ? err.message : "Could not end this interview.");
+    } finally {
+      setEnding(false);
+    }
   };
 
   const busy = status === "thinking" || status === "streaming";
@@ -389,6 +510,16 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               <Plus size={14} aria-hidden="true" />
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => { setEndOpen(true); setEndError(""); }}
+            aria-label="End interview"
+            title="End interview"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:w-auto md:gap-1.5 md:px-2.5"
+          >
+            <PhoneOff size={15} aria-hidden="true" />
+            <span className="hidden text-[11px] font-medium md:inline">End interview</span>
+          </button>
         </div>
       </header>
 
@@ -438,9 +569,13 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                     return (
                       <li key={caption.id} className="flex gap-3">
                         <span
-                          aria-hidden="true"
-                          className={`mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${latest ? "bg-primary" : "bg-border"}`}
-                        />
+                          aria-hidden={!caption.questionNumber}
+                          className={caption.questionNumber
+                            ? "mt-0.5 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
+                            : `mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full ${latest ? "bg-primary" : "bg-border"}`}
+                        >
+                          {caption.questionNumber ? `Q${caption.questionNumber} -` : null}
+                        </span>
                         <p
                           className={`min-w-0 flex-1 text-sm leading-6 [overflow-wrap:anywhere] ${
                             latest ? "text-foreground" : "text-muted-foreground/75"
@@ -513,7 +648,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               </button>
               <button
                 onClick={() => setHistoryOpen(true)}
-                disabled={!history.length}
+                disabled={!history.length && !answer && !captions.length}
                 aria-label="Open answer history"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
               >
@@ -639,10 +774,45 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               }
               askAI(action);
             }}
-            onClear={() => send({ event: "clear" })}
+            onClear={() => send({ event: "clear_answer" })}
           />
         </section>
       </div>
+
+      {endOpen ? (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/65 p-3 sm:items-center sm:p-6">
+          <section role="dialog" aria-modal="true" aria-labelledby="end-interview-title" className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-300">
+                <PhoneOff size={17} aria-hidden="true" />
+              </span>
+              <div>
+                <h2 id="end-interview-title" className="text-sm font-bold text-foreground">End interview</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">This closes the room and deletes its transcript, answers, and saved resume data.</p>
+              </div>
+            </div>
+            <label htmlFor="end-pairing-code" className="mt-5 block text-xs font-semibold text-foreground">Desktop pairing code</label>
+            <input
+              id="end-pairing-code"
+              autoFocus
+              inputMode="numeric"
+              autoComplete="off"
+              value={endCode}
+              onChange={(event) => setEndCode(event.target.value)}
+              placeholder="6-digit code"
+              className="mt-2 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm tracking-[0.16em] text-foreground outline-none placeholder:tracking-normal placeholder:text-muted-foreground focus:border-primary/60"
+            />
+            {endError ? <p role="alert" className="mt-2 text-xs text-rose-300">{endError}</p> : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setEndOpen(false)} className="h-10 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">Cancel</button>
+              <button type="button" onClick={endInterview} disabled={ending} className="inline-flex h-10 items-center gap-2 rounded-lg bg-rose-500 px-3.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50">
+                <PhoneOff size={13} aria-hidden="true" />
+                {ending ? "Ending..." : "End and delete room"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {settingsOpen ? (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-3 sm:items-center sm:p-6">
@@ -764,13 +934,22 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setHistoryOpen(false)}
-              aria-label="Close answer history"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <X size={17} aria-hidden="true" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadInterview}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Download size={14} aria-hidden="true" />
+                Download
+              </button>
+              <button
+                onClick={() => setHistoryOpen(false)}
+                aria-label="Close answer history"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <X size={17} aria-hidden="true" />
+              </button>
+            </div>
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
             <div className="mx-auto max-w-[68ch] space-y-4">
