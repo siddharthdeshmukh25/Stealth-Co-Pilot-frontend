@@ -166,6 +166,8 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       // Commit tokens still waiting in the frame buffer before clearing timers.
       flushStream();
       resetStream();
+      // Use the server's completed answer as the canonical text on every device.
+      if (typeof lastEvent.answer === "string") setAnswer(lastEvent.answer);
       if (lastEvent.status === "truncated") setNotice("The answer hit the length limit. Tap Explain deeper for the rest.");
     }
     if (lastEvent.event === "cleared") {
