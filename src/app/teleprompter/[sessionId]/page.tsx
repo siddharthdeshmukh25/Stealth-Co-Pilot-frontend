@@ -55,6 +55,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const streamTimer = useRef<number | null>(null);
   const latestQuestion = useRef("");
   const latestAnswer = useRef("");
+  const currentAnswerQuestion = useRef("");
 
   latestQuestion.current = question;
   latestAnswer.current = answer;
@@ -130,7 +131,10 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       if (restored.length) setCaptions(restored.map((text, index) => ({ id: Date.now() + index, text })));
       if (lastEvent.question) setQuestion(String(lastEvent.question));
       if (lastEvent.batch) setAskedBatch(String(lastEvent.batch));
-      if (lastEvent.answer) setAnswer(String(lastEvent.answer));
+      if (lastEvent.answer) {
+        setAnswer(String(lastEvent.answer));
+        currentAnswerQuestion.current = String(lastEvent.question || "");
+      }
     }
     if (lastEvent.event === "transcription_empty") setError(String(lastEvent.message || "No clear speech was detected."));
     if (lastEvent.event === "question_detected") {
@@ -144,11 +148,12 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       if (previous) {
         const entry: HistoryEntry = {
           id: Date.now(),
-          question: latestQuestion.current || "Previous question",
+          question: currentAnswerQuestion.current || latestQuestion.current || "Previous question",
           answer: previous,
         };
         setHistory((entries) => [entry, ...entries].slice(0, 30));
       }
+      currentAnswerQuestion.current = String(lastEvent.text || latestQuestion.current || "");
       resetStream();
       setAnswer("");
       setError("");
