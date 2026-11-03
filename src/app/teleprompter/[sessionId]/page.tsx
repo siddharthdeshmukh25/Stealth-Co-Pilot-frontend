@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Bot,
   Captions,
@@ -49,6 +50,7 @@ function shouldAutoFollowAnswer() {
 
 export default function TeleprompterPage({ params }: { params: { sessionId: string } }) {
   const { sessionId } = params;
+  const router = useRouter();
   const { connected, eventsVersion, takeEvents, send } = useWebSocket(sessionId);
   const wakeLock = useWakeLock();
   const [status, setStatus] = useState("listening");
