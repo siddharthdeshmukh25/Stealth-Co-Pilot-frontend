@@ -48,6 +48,8 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const [fontSize, setFontSize] = useState(17);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [captionFollowing, setCaptionFollowing] = useState(true);
+  const [newCaptions, setNewCaptions] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeTopic, setCodeTopic] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -62,6 +64,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const answerContent = useRef<HTMLDivElement>(null);
   const captionBox = useRef<HTMLDivElement>(null);
   const followingRef = useRef(true);
+  const captionFollowingRef = useRef(true);
   const pendingCode = useRef(false);
   const [following, setFollowing] = useState(true);
   const streamBuffer = useRef("");
@@ -222,7 +225,8 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       flushStream();
       resetStream();
       // Use the server's completed answer as the canonical text on every device.
-      if (typeof lastEvent.answer === "string") setAnswer(lastEvent.answer);
+      if (lastEvent.status === "error") setAnswer("");
+      else if (typeof lastEvent.answer === "string") setAnswer(lastEvent.answer);
       if (lastEvent.status === "truncated") setNotice("The answer hit the length limit. Tap Explain deeper for the rest.");
     }
     if (lastEvent.event === "cleared") {
@@ -263,8 +267,22 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
 
   useEffect(() => {
     const box = captionBox.current;
-    if (box) box.scrollTop = box.scrollHeight;
+    if (!box) return;
+    if (captionFollowingRef.current) {
+      box.scrollTop = box.scrollHeight;
+      setNewCaptions(false);
+    } else {
+      setNewCaptions(true);
+    }
   }, [captions.length]);
+
+  const scrollCaptionsToLatest = useCallback(() => {
+    const box = captionBox.current;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
+    captionFollowingRef.current = true;
+    setCaptionFollowing(true);
+    setNewCaptions(false);
+  }, []);
 
   const changeFont = (delta: number) => {
     setFontSize((current) => {
@@ -322,7 +340,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const busy = status === "thinking" || status === "streaming";
   const actionsDisabled = !connected || !captions.length || busy;
   const hint = !connected
-    ? "Reconnecting to your interview room…"
+    ? "Reconnecting to your interview roomâ€¦"
     : !captions.length
       ? "Waiting for the interviewer's first caption before Ask AI unlocks."
       : "";
@@ -377,14 +395,14 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       {!connected ? (
         <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-[11px] text-amber-200">
           <WifiOff size={12} aria-hidden="true" />
-          Reconnecting to the interview room…
+          Reconnecting to the interview roomâ€¦
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,auto)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[38dvh_minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-1">
         <section
           aria-label="Live interviewer captions"
-          className="flex min-h-0 max-h-[38dvh] flex-col border-b border-border/80 bg-card/25 lg:max-h-none lg:border-b-0 lg:border-r"
+          className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden border-b border-border/80 bg-card/25 lg:max-h-none lg:border-b-0 lg:border-r"
         >
           <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-2.5">
             <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -396,7 +414,18 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               {captions.length ? `${captions.length} ${captions.length === 1 ? "line" : "lines"}` : "Automatic"}
             </span>
           </div>
-          <div ref={captionBox} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4" aria-live="polite">
+          <div
+            ref={captionBox}
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 32;
+              captionFollowingRef.current = atBottom;
+              setCaptionFollowing(atBottom);
+              if (atBottom) setNewCaptions(false);
+            }}
+            className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-4"
+            aria-live="polite"
+          >
             {captions.length ? (
               <>
                 <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
@@ -435,11 +464,21 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 <p className="max-w-[26ch] text-xs leading-5 text-muted-foreground">
                   {connected
                     ? "Captions appear here the moment speech is detected on your laptop."
-                    : "Keep this page open — captions resume automatically."}
+                    : "Keep this page open â€” captions resume automatically."}
                 </p>
               </div>
             )}
           </div>
+          {!captionFollowing ? (
+            <button
+              type="button"
+              onClick={scrollCaptionsToLatest}
+              className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-1.5 text-[11px] font-medium text-foreground shadow-lg backdrop-blur transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ChevronDown size={13} aria-hidden="true" />
+              {newCaptions ? "New captions Â· Latest" : "Latest"}
+            </button>
+          ) : null}
         </section>
 
         <section aria-label="Suggested interview response" className="flex min-h-0 flex-col bg-background">
@@ -644,7 +683,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                     disabled={settingsLoading}
                     className="text-[11px] font-medium text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
                   >
-                    {settingsLoading ? "Loading models…" : "Refresh models"}
+                    {settingsLoading ? "Loading modelsâ€¦" : "Refresh models"}
                   </button>
                 </div>
                 <select
@@ -659,9 +698,9 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 >
                   {modelOptions.length ? modelOptions.map((model) => (
                     <option key={model.id} value={model.id}>
-                      {model.id}{model.context_window ? ` · ${Number(model.context_window).toLocaleString()} context` : ""}
+                      {model.id}{model.context_window ? ` Â· ${Number(model.context_window).toLocaleString()} context` : ""}
                     </option>
-                  )) : <option value="">{settingsLoading ? "Loading active models…" : "No models loaded"}</option>}
+                  )) : <option value="">{settingsLoading ? "Loading active modelsâ€¦" : "No models loaded"}</option>}
                 </select>
                 {settingsError ? <p role="alert" className="mt-2 text-xs leading-5 text-rose-300">{settingsError}</p> : null}
                 <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
@@ -671,7 +710,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               <div>
                 <label htmlFor="extra-answer-context" className="text-xs font-semibold text-foreground">Extra answer context</label>
                 <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-                  Add preferences such as “use simple English”, “keep it under 30 seconds”, or a detail the answer should focus on.
+                  Add preferences such as â€œuse simple Englishâ€, â€œkeep it under 30 secondsâ€, or a detail the answer should focus on.
                 </p>
                 <textarea
                   id="extra-answer-context"
@@ -682,7 +721,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                     setAdditionalContext(event.target.value);
                     window.localStorage.setItem(`${CONTEXT_KEY}:${sessionId}`, event.target.value);
                   }}
-                  placeholder="Use simple words and answer in 3–4 short sentences…"
+                  placeholder="Use simple words and answer in 3â€“4 short sentencesâ€¦"
                   className="mt-2 w-full resize-y rounded-xl border border-border bg-card px-3 py-2.5 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/60"
                 />
                 <p className="mt-1 text-right text-[10px] tabular-nums text-muted-foreground">{additionalContext.length}/3000</p>
