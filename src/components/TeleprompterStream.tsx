@@ -50,7 +50,9 @@ function parse(text: string): Block[] {
   let code: string[] | null = null;
 
   const flushParagraph = () => {
-    const joined = paragraph.join(" ").trim();
+    // Keep intentional line breaks from the model. `white-space: pre-line` below
+    // preserves them while still collapsing accidental runs of spaces.
+    const joined = paragraph.join("\n").trim();
     if (joined) blocks.push({ kind: "paragraph", text: joined });
     paragraph = [];
   };
@@ -135,22 +137,22 @@ export default function TeleprompterStream({
 
   return (
     <div
-      className="text-left text-foreground"
-      style={{ fontSize: `${fontSize}px`, lineHeight: 1.68 }}
+      className="w-full min-w-0 break-words text-left text-foreground [overflow-wrap:break-word] [word-break:normal] [text-size-adjust:100%]"
+      style={{ fontSize: `${fontSize}px`, lineHeight: 1.62, whiteSpace: "pre-line" }}
       aria-live="polite"
     >
       {blocks.map((block, index) => {
         const key = `block-${index}`;
         if (block.kind === "heading") {
           return (
-            <p key={key} className={`font-semibold tracking-tight text-foreground ${index ? "mt-4" : ""}`}>
+            <p key={key} className={`min-w-0 break-words font-semibold tracking-tight text-foreground ${index ? "mt-4" : ""}`}>
               {inline(block.text, key)}
             </p>
           );
         }
         if (block.kind === "list") {
           return (
-            <ul key={key} className={`space-y-1.5 ${index ? "mt-3" : ""}`}>
+            <ul key={key} className={`min-w-0 space-y-1.5 ${index ? "mt-3" : ""}`}>
               {block.items.map((item, itemIndex) => (
                 <li key={`${key}-${itemIndex}`} className="flex gap-2.5">
                   <span
@@ -159,7 +161,7 @@ export default function TeleprompterStream({
                   >
                     {block.ordered ? `${itemIndex + 1}.` : "•"}
                   </span>
-                  <span className="min-w-0 flex-1">{inline(item, `${key}-${itemIndex}`)}</span>
+                  <span className="min-w-0 flex-1 break-words [overflow-wrap:break-word]">{inline(item, `${key}-${itemIndex}`)}</span>
                 </li>
               ))}
             </ul>
@@ -176,7 +178,7 @@ export default function TeleprompterStream({
           );
         }
         return (
-          <p key={key} className={`${index ? "mt-3" : ""} text-foreground/95`}>
+          <p key={key} className={`min-w-0 break-words [overflow-wrap:break-word] ${index ? "mt-3" : ""} text-foreground/95`}>
             {inline(block.text, key)}
           </p>
         );
