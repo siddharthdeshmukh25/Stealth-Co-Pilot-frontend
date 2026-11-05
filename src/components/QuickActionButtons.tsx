@@ -1,5 +1,5 @@
 "use client";
-import { Code2, Layers, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, Code2, Layers, Sparkles, Trash2 } from "lucide-react";
 
 type Props = {
   onAskAI: () => void;
@@ -7,15 +7,30 @@ type Props = {
   onClear: () => void;
   disabled: boolean;
   hint?: string;
+  // Shown inside the bar, so the chip never leaves a band or blocks the feed.
+  onJumpToLatest?: () => void;
 };
 
 const secondary =
   "press inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-border bg-card/60 text-[12px] font-semibold text-foreground/85 backdrop-blur transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35";
 
-export default function QuickActionButtons({ onAskAI, onAction, onClear, disabled, hint }: Props) {
+export default function QuickActionButtons({ onAskAI, onAction, onClear, disabled, hint, onJumpToLatest }: Props) {
   return (
     <div className="glass-flat safe-bottom z-30 shrink-0 rounded-t-3xl px-3 pt-2.5">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+        {onJumpToLatest ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onJumpToLatest}
+              aria-label="Jump to latest answer"
+              className="press inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 px-3 text-[11px] font-bold text-foreground transition-colors hover:border-primary/70"
+            >
+              <ChevronDown size={13} aria-hidden="true" />
+              Jump to latest
+            </button>
+          </div>
+        ) : null}
         {hint ? (
           <p className="text-center text-[10.5px] leading-4 text-muted-foreground" role="status">
             {hint}

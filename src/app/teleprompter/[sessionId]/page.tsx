@@ -956,23 +956,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       </div>
       </div>
 
-      {/* Its own row above the action bar: the pill never covers answer text. */}
-      {!following && answer ? (
-        <div className="flex shrink-0 justify-center px-3 pb-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              follow(true);
-              scrollToLatest("smooth");
-            }}
-            aria-label="Jump to latest answer"
-            className="press inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 bg-card px-3 text-[11px] font-bold text-foreground"
-          >
-            <ChevronDown size={13} aria-hidden="true" />
-            Jump to latest
-          </button>
-        </div>
-      ) : null}
+
 
       {codeOpen ? (
         <form
@@ -1016,6 +1000,14 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       <QuickActionButtons
         disabled={actionsDisabled}
         hint={hint || undefined}
+        onJumpToLatest={
+          !following && answer
+            ? () => {
+                follow(true);
+                scrollToLatest("smooth");
+              }
+            : undefined
+        }
         onAskAI={() => askAI()}
         onAction={(action) => {
           if (action === "code_example") {
