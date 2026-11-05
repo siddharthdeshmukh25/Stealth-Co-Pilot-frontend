@@ -210,14 +210,15 @@ export default function HomePage() {
           <div className="relative mx-auto grid w-full max-w-7xl gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-20 lg:py-24">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-xs font-medium text-slate-200">
-                <Sparkles className="size-3.5 text-[#19C994]" /> Interview co-pilot
+                <Sparkles className="size-3.5 text-[#19C994]" /> AI interview assistant
               </span>
               <h1 className="mt-7 max-w-[680px] text-[clamp(2.65rem,5.4vw,4.35rem)] font-semibold leading-[1.04] tracking-[-0.055em]">
-                Your interview script, right on your <span className="text-[#19C994]">phone.</span>
+                An AI that helps you answer, live in the <span className="text-[#19C994]">interview.</span>
               </h1>
               <p className="mt-5 max-w-[610px] text-base leading-7 text-slate-400 sm:text-[17px] sm:leading-8">
-                The desktop app hears the interview, the backend writes the captions, and this page shows them on your
-                phone - with one-tap AI answers from your own resume and job description. Your shared screen stays clean.
+                This is an AI interview assistant: the desktop app listens to the interviewer on your laptop, turns the
+                questions into live captions, and sends ready-to-say answers to your phone - built from your own resume
+                and the job description you loaded. Your shared screen stays clean.
               </p>
 
               <form onSubmit={openRoom} id="code" className="mt-9 max-w-xl rounded-2xl border border-white/[0.09] bg-[#141719] p-2 shadow-[0_18px_55px_-42px_rgba(0,0,0,0.8)]">
