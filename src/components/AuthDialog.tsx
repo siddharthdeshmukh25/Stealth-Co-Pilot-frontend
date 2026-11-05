@@ -12,9 +12,12 @@ type Props = {
 };
 
 export default function AuthDialog({ open, onClose, onSignedIn, reason }: Props) {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, authError } = useAuth();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // A redirect sign-in that fails comes back to the page, not to this click, so the
+  // hook's message has to be shown too or the failure looks silent.
+  const shown = error || authError;
 
   useEffect(() => {
     if (open) setError("");
@@ -87,9 +90,9 @@ export default function AuthDialog({ open, onClose, onSignedIn, reason }: Props)
           {busy ? "Opening Google…" : "Sign in with Google"}
         </button>
 
-        {error ? (
+        {shown ? (
           <p role="alert" className="mt-3 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-[11.5px] leading-5 text-rose-300">
-            {error}
+            {shown}
           </p>
         ) : null}
 

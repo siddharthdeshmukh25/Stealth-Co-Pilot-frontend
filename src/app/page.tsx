@@ -19,14 +19,15 @@ import {
 import AuthDialog, { GoogleMark } from "@/components/AuthDialog";
 import { useAuth } from "@/hooks/useAuth";
 
-// GitHub always serves the newest release asset behind "latest", so this link
-// never goes stale after a new desktop build is published.
+// Points at the repo that the release workflow actually publishes to, so the
+// button always hands out the current build (the old `-desktop` repo stopped at
+// v1.1.0 and left visitors on a stale EXE).
 const DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
-  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot-desktop/releases/latest/download/StealthInterviewCoPilot.exe";
-// Kept in step with desktop-client/src/version.py; the app updates itself in place.
-const DESKTOP_VERSION = "1.1.0";
-const DESKTOP_SIZE = "108 MB";
+  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot/releases/latest/download/StealthInterviewCoPilot.exe";
+// Replaced at runtime by /api/desktop-release, which reads the newest GitHub tag.
+const FALLBACK_RELEASE = { version: "1.1.6", sizeMb: "108.5", filename: "StealthInterviewCoPilot.exe", downloadUrl: DOWNLOAD_URL };
+type DesktopRelease = typeof FALLBACK_RELEASE;
 const DOWNLOAD_INTENT = "copilot:download-intent";
 
 // Storage can throw in private mode / embedded browsers; the download must still work.
@@ -78,10 +79,24 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [downloadPending, setDownloadPending] = useState(false);
+  const [release, setRelease] = useState<DesktopRelease>(FALLBACK_RELEASE);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/desktop-release")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: DesktopRelease | null) => {
+        if (active && data && /^\d+\.\d+\.\d+$/.test(data.version || "")) setRelease({ ...FALLBACK_RELEASE, ...data });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const startDownload = () => {
     intent("clear");
-    window.location.href = DOWNLOAD_URL;
+    window.location.href = release.downloadUrl || DOWNLOAD_URL;
   };
 
   // A Google redirect sign-in comes back to this page already signed in; finish
@@ -344,7 +359,7 @@ export default function HomePage() {
                 <span className="size-2.5 rounded-full bg-[#28C840]" />
                 <p className="ml-2 truncate text-[11px] font-medium text-slate-400">Stealth Co-Pilot — Setup</p>
                 <span className="ml-auto rounded-md border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                  v{DESKTOP_VERSION}
+                  v{release.version}
                 </span>
               </div>
 
@@ -354,15 +369,15 @@ export default function HomePage() {
                     <Laptop className="size-5" />
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">StealthInterviewCoPilot.exe</p>
-                    <p className="text-xs text-muted-foreground">Windows 10 / 11 · 64-bit · {DESKTOP_SIZE}</p>
+                    <p className="truncate text-sm font-semibold">{release.filename}</p>
+                    <p className="text-xs text-muted-foreground">Windows 10 / 11 · 64-bit · {release.sizeMb} MB</p>
                   </div>
                 </div>
 
                 <div className="mt-5 space-y-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 font-mono text-[11px] text-muted-foreground">
                   <p className="flex items-center justify-between gap-3">
                     <span>Version</span>
-                    <span className="text-slate-300">{DESKTOP_VERSION} (latest)</span>
+                    <span className="text-slate-300">{release.version} (latest)</span>
                   </p>
                   <p className="flex items-center justify-between gap-3">
                     <span>Updates</span>

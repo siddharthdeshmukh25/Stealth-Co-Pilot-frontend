@@ -11,10 +11,10 @@ import {
 } from "firebase/auth";
 import { authErrorMessage, firebaseAuth } from "@/lib/firebase";
 
-const POPUP_FALLBACK = new Set([
-  "auth/popup-blocked",
-  "auth/popup-closed-by-user",
-  "auth/cancelled-popup-request",
+// Sign-in goes through a full redirect everywhere: popups are blocked outright in
+// in-app browsers, strict privacy modes and many desktop setups, and a blocked
+// popup looked like "nothing happens" when the user clicked Google.
+const POPUP_ONLY_ENVIRONMENTS = new Set([
   "auth/operation-not-supported-in-this-environment",
   "auth/web-storage-unsupported",
 ]);
@@ -26,25 +26,32 @@ function googleProvider() {
   return provider;
 }
 
-function prefersRedirect() {
-  if (typeof navigator === "undefined") return false;
-  // iOS Safari and in-app browsers block popups far more often than desktop.
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+function errorCode(error: unknown) {
+  return typeof error === "object" && error && "code" in error ? String((error as { code: unknown }).code) : "";
 }
+
+// Cancelling is a normal user action, not something to shout about.
+const SILENT_CODES = new Set(["auth/cancelled-popup-request", "auth/popup-closed-by-user", "auth/user-cancelled"]);
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
     let active = true;
     const auth = firebaseAuth();
-    // Completes a redirect sign-in that came back from Google.
-    getRedirectResult(auth).catch(() => undefined);
+    // Completes a redirect sign-in that came back from Google; failures used to be
+    // swallowed here, which is why a broken sign-in showed no message at all.
+    getRedirectResult(auth).catch((error: unknown) => {
+      if (!active || SILENT_CODES.has(errorCode(error))) return;
+      setAuthError(authErrorMessage(error));
+    });
     const unsubscribe = onAuthStateChanged(auth, (next) => {
       if (!active) return;
       setUser(next);
       setLoading(false);
+      if (next) setAuthError("");
     });
     return () => {
       active = false;
@@ -54,17 +61,17 @@ export function useAuth() {
 
   const signInWithGoogle = useCallback(async () => {
     const auth = firebaseAuth();
+    setAuthError("");
     try {
-      if (prefersRedirect()) {
-        await signInWithRedirect(auth, googleProvider());
-        return;
-      }
-      await signInWithPopup(auth, googleProvider());
+      await signInWithRedirect(auth, googleProvider());
     } catch (error) {
-      const code = typeof error === "object" && error && "code" in error ? String((error as { code: unknown }).code) : "";
-      if (POPUP_FALLBACK.has(code)) {
-        await signInWithRedirect(auth, googleProvider());
-        return;
+      if (POPUP_ONLY_ENVIRONMENTS.has(errorCode(error))) {
+        try {
+          await signInWithPopup(auth, googleProvider());
+          return;
+        } catch (popupError) {
+          throw new Error(authErrorMessage(popupError));
+        }
       }
       throw new Error(authErrorMessage(error));
     }
@@ -74,5 +81,5 @@ export function useAuth() {
     await signOut(firebaseAuth());
   }, []);
 
-  return { user, loading, signInWithGoogle, signOut: signOutNow };
+  return { user, loading, authError, signInWithGoogle, signOut: signOutNow };
 }
