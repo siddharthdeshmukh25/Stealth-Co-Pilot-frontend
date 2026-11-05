@@ -10,31 +10,40 @@ type Props = {
 };
 
 const secondary =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35";
+  "press inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-border bg-card/60 text-[12px] font-semibold text-foreground/85 backdrop-blur transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35";
 
 export default function QuickActionButtons({ onAskAI, onAction, onClear, disabled, hint }: Props) {
   return (
-    <div className="shrink-0 border-t border-border/80 bg-background/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur sm:px-5">
-      <div className="mx-auto flex max-w-3xl flex-col gap-2">
+    <div className="glass safe-bottom z-30 shrink-0 rounded-t-3xl px-3 pt-2.5">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+        {hint ? (
+          <p className="text-center text-[10.5px] leading-4 text-muted-foreground" role="status">
+            {hint}
+          </p>
+        ) : null}
         <div className="flex items-center gap-2">
           <button
             disabled={disabled}
             onClick={onAskAI}
-            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-35"
+            className="press group relative inline-flex h-12 flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-20px_var(--glow)] transition-[filter,transform] hover:brightness-[1.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-35"
           >
-            <Sparkles size={15} aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-white/25 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-hover:[animation:sheen_0.9s_ease-out]"
+            />
+            <Sparkles size={16} aria-hidden="true" />
             Ask AI
           </button>
           <button
             onClick={onClear}
             aria-label="Clear answer output"
             title="Clear answer output"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="press inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Trash2 size={16} aria-hidden="true" />
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
           <button disabled={disabled} onClick={() => onAction("explain_deeper")} className={secondary}>
             <Layers size={14} aria-hidden="true" />
             Explain deeper
@@ -44,11 +53,6 @@ export default function QuickActionButtons({ onAskAI, onAction, onClear, disable
             Code example
           </button>
         </div>
-        {hint ? (
-          <p className="text-center text-[11px] leading-4 text-muted-foreground" role="status">
-            {hint}
-          </p>
-        ) : null}
       </div>
     </div>
   );

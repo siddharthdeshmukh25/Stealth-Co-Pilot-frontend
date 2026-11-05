@@ -1,8 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bot, Captions, Check, KeyRound, Laptop, Smartphone, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Captions,
+  Check,
+  Download,
+  KeyRound,
+  Laptop,
+  LogOut,
+  MonitorDown,
+  Smartphone,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+import AuthDialog, { GoogleMark } from "@/components/AuthDialog";
+import { useAuth } from "@/hooks/useAuth";
+
+const DOWNLOAD_URL = process.env.NEXT_PUBLIC_DOWNLOAD_URL || "/StealthInterviewCoPilot.exe";
+const DOWNLOAD_INTENT = "copilot:download-intent";
+
+// Storage can throw in private mode / embedded browsers; the download must still work.
+function intent(action: "read" | "set" | "clear") {
+  try {
+    if (action === "set") window.sessionStorage.setItem(DOWNLOAD_INTENT, "1");
+    else if (action === "clear") window.sessionStorage.removeItem(DOWNLOAD_INTENT);
+    else return window.sessionStorage.getItem(DOWNLOAD_INTENT) === "1";
+  } catch {
+    /* ignore blocked storage */
+  }
+  return false;
+}
 
 const FEATURES = [
   {
@@ -35,9 +65,41 @@ const STEPS = [
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [downloadPending, setDownloadPending] = useState(false);
+
+  const startDownload = () => {
+    intent("clear");
+    window.location.href = DOWNLOAD_URL;
+  };
+
+  // A Google redirect sign-in comes back to this page already signed in; finish
+  // the download the visitor originally asked for.
+  useEffect(() => {
+    if (user && intent("read")) startDownload();
+  }, [user]);
+
+  // The EXE is members-only: the download button signs the visitor in with
+  // Google first and then continues straight into the installer download.
+  const requestDownload = () => {
+    if (user) {
+      startDownload();
+      return;
+    }
+    intent("set");
+    setDownloadPending(true);
+    setAuthOpen(true);
+  };
+
+  const openAuth = () => {
+    intent("clear");
+    setDownloadPending(false);
+    setAuthOpen(true);
+  };
 
   async function openRoom(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,22 +130,54 @@ export default function HomePage() {
   return (
     <div className="min-h-[100dvh] bg-[#0B0D0E] text-white [--background:#0B0D0E] [--card:#141719] [--border:rgba(255,255,255,0.09)]">
       <header className="sticky top-0 z-20 border-b border-white/[0.08] bg-[#0B0D0E]/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center justify-between px-5 sm:px-8">
-          <a href="#top" className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#141719] text-[#19C994]"><Sparkles className="size-[18px]" /></span>
-            <span className="text-[15px] font-semibold tracking-[-0.02em]">Stealth Co-Pilot</span>
+        <div className="mx-auto flex h-[64px] w-full max-w-7xl items-center justify-between gap-2 px-4 sm:h-[72px] sm:px-8">
+          <a href="#top" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#141719] text-[#19C994] sm:h-10 sm:w-10"><Sparkles className="size-[17px]" /></span>
+            <span className="truncate whitespace-nowrap text-[13px] font-semibold tracking-[-0.02em] sm:text-[15px]">Stealth Co-Pilot</span>
           </a>
           <nav className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">
             <a className="transition-colors hover:text-foreground" href="#features">Features</a>
             <a className="transition-colors hover:text-foreground" href="#how">How it works</a>
             <a className="transition-colors hover:text-foreground" href="#code">Pair a phone</a>
           </nav>
-          <a
-            href="#code"
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#0B0D0E] transition-colors duration-200 hover:bg-emerald-50"
-          >
-            Open room <ArrowRight className="size-4" />
-          </a>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {authLoading ? (
+              <span className="h-10 w-10 animate-pulse rounded-xl bg-white/5 sm:w-24" aria-hidden="true" />
+            ) : user ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 sm:inline-flex">
+                  <UserRound className="size-3.5 text-[#19C994]" />
+                  <span className="max-w-[160px] truncate">{user.displayName || user.email}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  aria-label="Sign out"
+                  title="Sign out"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+                >
+                  <LogOut className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openAuth}
+                aria-label="Sign in with Google"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-2.5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.06] hover:text-white sm:px-3.5"
+              >
+                <GoogleMark size={15} /> <span className="hidden sm:inline">Sign in</span>
+              </button>
+            )}
+            <a
+              href="#code"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-white px-3 text-[13px] font-semibold text-[#0B0D0E] transition-colors duration-200 hover:bg-emerald-50 sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <span className="sm:hidden">Room</span>
+              <span className="hidden sm:inline">Open room</span>
+              <ArrowRight className="size-4" />
+            </a>
+          </div>
         </div>
       </header>
 
@@ -221,18 +315,81 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section id="download" className="border-t border-white/[0.08]">
+          <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#19C994]/25 bg-[#19C994]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.14em] text-[#19C994]">
+                <MonitorDown className="size-3.5" /> Windows app
+              </span>
+              <h2 className="mt-5 text-[clamp(1.8rem,3.4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.04em]">
+                Download Stealth Co-Pilot for your laptop
+              </h2>
+              <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted-foreground">
+                The desktop app creates the room, captures the interviewer&apos;s audio on your own PC and keeps your
+                resume and interview history. One account unlocks the download and signs you in on both devices.
+              </p>
+              <ul className="mt-6 grid gap-2.5 text-sm text-slate-300 sm:grid-cols-2">
+                {["Windows 10 / 11 (64-bit)", "Sign-in required", "Local speech model, no audio upload", "Interview history on your PC"].map((item) => (
+                  <li key={item} className="inline-flex items-center gap-2">
+                    <Check className="size-4 shrink-0 text-[#19C994]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-3xl border border-white/[0.09] bg-[#111516] p-6 shadow-[0_30px_80px_-52px_rgba(0,0,0,0.95)] sm:p-7">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#19C994]/15 bg-[#19C994]/10 text-[#19C994]">
+                  <Laptop className="size-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">StealthInterviewCoPilot.exe</p>
+                  <p className="text-xs text-muted-foreground">Single-file build · sign in to unlock</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={requestDownload}
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#19C994] px-5 text-sm font-semibold text-[#06291F] transition-colors duration-200 hover:bg-[#27d8a4] disabled:opacity-60"
+              >
+                <Download className="size-4" />
+                {user ? "Download for Windows" : "Sign in to download"}
+              </button>
+              <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
+                {user
+                  ? `Signed in as ${user.email}`
+                  : "New here? Google creates your account the first time you sign in."}
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-5 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>Stealth Interview Co-Pilot - captions and AI answers, on your phone.</p>
           <div className="flex items-center gap-5">
+            <a className="transition-colors hover:text-foreground" href="#download">
+              Download app
+            </a>
             <a className="transition-colors hover:text-foreground" href="#code">
               Pair a phone
             </a>
           </div>
         </div>
       </footer>
+
+      <AuthDialog
+        open={authOpen}
+        reason={downloadPending ? "Sign in with Google to download the desktop app." : undefined}
+        onClose={() => setAuthOpen(false)}
+        onSignedIn={() => {
+          if (downloadPending) startDownload();
+          setDownloadPending(false);
+        }}
+      />
     </div>
   );
 }

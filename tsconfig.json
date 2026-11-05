@@ -37,7 +37,9 @@
     ".next-copilot-3005/types/**/*.ts",
     ".next-production-build/types/**/*.ts",
     ".next-copilot-3000/types/**/*.ts",
-    ".next-designcheck/types/**/*.ts"
+    ".next-designcheck/types/**/*.ts",
+    ".next-copilot-3001/types/**/*.ts",
+    ".next-copilot-3002/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
