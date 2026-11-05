@@ -23,10 +23,9 @@ import { useAuth } from "@/hooks/useAuth";
 // never goes stale after a new desktop build is published.
 const DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
-  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot/releases/latest/download/StealthInterviewCoPilot.exe";
-// Fallbacks only: the setup card asks /api/desktop-release for the newest build,
-// so a fresh GitHub release shows up here without editing this page.
-const DESKTOP_VERSION = "1.1.2";
+  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot-desktop/releases/latest/download/StealthInterviewCoPilot.exe";
+// Kept in step with desktop-client/src/version.py; the app updates itself in place.
+const DESKTOP_VERSION = "1.1.0";
 const DESKTOP_SIZE = "108 MB";
 const DOWNLOAD_INTENT = "copilot:download-intent";
 
@@ -79,33 +78,11 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [downloadPending, setDownloadPending] = useState(false);
-  const [release, setRelease] = useState({ version: DESKTOP_VERSION, size: DESKTOP_SIZE, url: DOWNLOAD_URL });
 
   const startDownload = () => {
     intent("clear");
-    window.location.href = release.url;
+    window.location.href = DOWNLOAD_URL;
   };
-
-  // Keep the version, size and download link in step with the newest release.
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/desktop-release", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (!alive || !data?.version) return;
-        setRelease({
-          version: String(data.version),
-          size: String(data.size || DESKTOP_SIZE),
-          url: String(data.url || DOWNLOAD_URL),
-        });
-      })
-      .catch(() => {
-        /* the fallback constants already render a working card */
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   // A Google redirect sign-in comes back to this page already signed in; finish
   // the download the visitor originally asked for.
@@ -210,15 +187,14 @@ export default function HomePage() {
           <div className="relative mx-auto grid w-full max-w-7xl gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-20 lg:py-24">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-xs font-medium text-slate-200">
-                <Sparkles className="size-3.5 text-[#19C994]" /> AI interview assistant
+                <Sparkles className="size-3.5 text-[#19C994]" /> Interview co-pilot
               </span>
               <h1 className="mt-7 max-w-[680px] text-[clamp(2.65rem,5.4vw,4.35rem)] font-semibold leading-[1.04] tracking-[-0.055em]">
-                An AI that helps you answer, live in the <span className="text-[#19C994]">interview.</span>
+                Your interview script, right on your <span className="text-[#19C994]">phone.</span>
               </h1>
               <p className="mt-5 max-w-[610px] text-base leading-7 text-slate-400 sm:text-[17px] sm:leading-8">
-                This is an AI interview assistant: the desktop app listens to the interviewer on your laptop, turns the
-                questions into live captions, and sends ready-to-say answers to your phone - built from your own resume
-                and the job description you loaded. Your shared screen stays clean.
+                The desktop app hears the interview, the backend writes the captions, and this page shows them on your
+                phone - with one-tap AI answers from your own resume and job description. Your shared screen stays clean.
               </p>
 
               <form onSubmit={openRoom} id="code" className="mt-9 max-w-xl rounded-2xl border border-white/[0.09] bg-[#141719] p-2 shadow-[0_18px_55px_-42px_rgba(0,0,0,0.8)]">
@@ -263,56 +239,37 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#0E1112] shadow-[0_34px_90px_-46px_rgba(0,0,0,0.98)]">
-              <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.045] px-4 py-2.5">
-                <span className="size-2.5 rounded-full bg-[#FF5F57]" />
-                <span className="size-2.5 rounded-full bg-[#FEBC2E]" />
-                <span className="size-2.5 rounded-full bg-[#28C840]" />
-                <p className="ml-2 truncate text-[11px] font-medium text-slate-400">Stealth Co-Pilot — Setup</p>
-                <span className="ml-auto rounded-md border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                  v{release.version}
-                </span>
-              </div>
-
-              <div className="p-6 sm:p-7">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#19C994]/15 bg-[#19C994]/10 text-[#19C994]">
-                    <Laptop className="size-5" />
+            <div className="relative mx-auto w-full max-w-[430px] lg:justify-self-end">
+              <div className="relative overflow-hidden rounded-[28px] border border-white/[0.12] bg-[#101314] shadow-[0_30px_80px_-48px_rgba(0,0,0,0.95)]">
+                <div className="mx-auto mt-3 h-1 w-12 rounded-full bg-white/15" />
+                <div className="flex items-center justify-between border-b border-border px-5 py-3 text-[11px] uppercase tracking-[.16em] text-muted-foreground">
+                  <span className="flex items-center gap-2 text-emerald-400">
+                    <span className="size-1.5 rounded-full bg-emerald-400" /> Live
                   </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">StealthInterviewCoPilot.exe</p>
-                    <p className="text-xs text-muted-foreground">Windows 10 / 11 · 64-bit · {release.size}</p>
+                  <span>Room 3d6051</span>
+                </div>
+                <div className="space-y-5 px-5 py-6">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Captions</p>
+                    <p className="mt-2 text-[15px] leading-7">
+                      "...so tell me about a time you had to ship a feature with half the team out sick."
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-[#19C994]/20 bg-[#0B0D0E] p-4">
+                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-emerald-400">
+                      <Bot className="size-3.5" /> AI answer
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Lead with the constraint, then the decision: I cut scope to the checkout path, moved analytics to a
+                      follow-up, and shipped two days early with a written handover.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Ask AI</span>
+                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Story</span>
+                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Follow-up</span>
                   </div>
                 </div>
-
-                <div className="mt-5 space-y-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 font-mono text-[11px] text-muted-foreground">
-                  <p className="flex items-center justify-between gap-3">
-                    <span>Version</span>
-                    <span className="text-slate-300">{release.version} (latest)</span>
-                  </p>
-                  <p className="flex items-center justify-between gap-3">
-                    <span>Updates</span>
-                    <span className="text-slate-300">Automatic, in-app</span>
-                  </p>
-                  <p className="flex items-center justify-between gap-3">
-                    <span>Account</span>
-                    <span className="text-slate-300">Google sign-in</span>
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={requestDownload}
-                  className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#19C994] px-5 text-sm font-semibold text-[#06291F] transition-colors duration-200 hover:bg-[#27d8a4] disabled:opacity-60"
-                >
-                  <Download className="size-4" />
-                  {user ? "Download for Windows" : "Sign in to download"}
-                </button>
-                <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
-                  {user
-                    ? `Signed in as ${user.email}`
-                    : "New here? Google creates your account the first time you sign in."}
-                </p>
               </div>
             </div>
           </div>
@@ -378,47 +335,58 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <button
-                type="button"
-                onClick={requestDownload}
-                className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#19C994] px-6 text-sm font-semibold text-[#06291F] transition-colors duration-200 hover:bg-[#27d8a4]"
-              >
-                <Download className="size-4" />
-                Get v{release.version} for Windows
-              </button>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[430px] lg:justify-self-end">
-              <div className="relative overflow-hidden rounded-[28px] border border-white/[0.12] bg-[#101314] shadow-[0_30px_80px_-48px_rgba(0,0,0,0.95)]">
-                <div className="mx-auto mt-3 h-1 w-12 rounded-full bg-white/15" />
-                <div className="flex items-center justify-between border-b border-border px-5 py-3 text-[11px] uppercase tracking-[.16em] text-muted-foreground">
-                  <span className="flex items-center gap-2 text-emerald-400">
-                    <span className="size-1.5 rounded-full bg-emerald-400" /> Live
+            <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#0E1112] shadow-[0_34px_90px_-46px_rgba(0,0,0,0.98)]">
+              <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.045] px-4 py-2.5">
+                <span className="size-2.5 rounded-full bg-[#FF5F57]" />
+                <span className="size-2.5 rounded-full bg-[#FEBC2E]" />
+                <span className="size-2.5 rounded-full bg-[#28C840]" />
+                <p className="ml-2 truncate text-[11px] font-medium text-slate-400">Stealth Co-Pilot — Setup</p>
+                <span className="ml-auto rounded-md border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  v{DESKTOP_VERSION}
+                </span>
+              </div>
+
+              <div className="p-6 sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#19C994]/15 bg-[#19C994]/10 text-[#19C994]">
+                    <Laptop className="size-5" />
                   </span>
-                  <span>Room 3d6051</span>
-                </div>
-                <div className="space-y-5 px-5 py-6">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Captions</p>
-                    <p className="mt-2 text-[15px] leading-7">
-                      "...so tell me about a time you had to ship a feature with half the team out sick."
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-[#19C994]/20 bg-[#0B0D0E] p-4">
-                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-emerald-400">
-                      <Bot className="size-3.5" /> AI answer
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Lead with the constraint, then the decision: I cut scope to the checkout path, moved analytics to a
-                      follow-up, and shipped two days early with a written handover.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Ask AI</span>
-                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Story</span>
-                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Follow-up</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">StealthInterviewCoPilot.exe</p>
+                    <p className="text-xs text-muted-foreground">Windows 10 / 11 · 64-bit · {DESKTOP_SIZE}</p>
                   </div>
                 </div>
+
+                <div className="mt-5 space-y-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 font-mono text-[11px] text-muted-foreground">
+                  <p className="flex items-center justify-between gap-3">
+                    <span>Version</span>
+                    <span className="text-slate-300">{DESKTOP_VERSION} (latest)</span>
+                  </p>
+                  <p className="flex items-center justify-between gap-3">
+                    <span>Updates</span>
+                    <span className="text-slate-300">Automatic, in-app</span>
+                  </p>
+                  <p className="flex items-center justify-between gap-3">
+                    <span>Account</span>
+                    <span className="text-slate-300">Google sign-in</span>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={requestDownload}
+                  className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#19C994] px-5 text-sm font-semibold text-[#06291F] transition-colors duration-200 hover:bg-[#27d8a4] disabled:opacity-60"
+                >
+                  <Download className="size-4" />
+                  {user ? "Download for Windows" : "Sign in to download"}
+                </button>
+                <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
+                  {user
+                    ? `Signed in as ${user.email}`
+                    : "New here? Google creates your account the first time you sign in."}
+                </p>
               </div>
             </div>
           </div>

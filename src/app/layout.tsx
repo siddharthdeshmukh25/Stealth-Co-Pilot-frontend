@@ -3,13 +3,13 @@ import "./globals.css";
 import ServiceWorker from "@/components/ServiceWorker";
 
 export const metadata: Metadata = {
-  title: "AI interview assistant · live captions and answers on your phone",
+  title: "Stealth Interview Co-Pilot · live captions and AI answers on your phone",
   description:
-    "An AI assistant for live interviews: the desktop app listens to the interviewer, writes live captions and sends one-tap answers to your phone using your own resume and the job description.",
+    "Pair your phone with the desktop app and follow the interview through live captions and one-tap AI answers built from your own resume and job description.",
   applicationName: "Stealth Interview Co-Pilot",
   openGraph: {
-    title: "AI interview assistant",
-    description: "Live interview captions and one-tap AI answers on your phone, paired from the desktop app.",
+    title: "Stealth Interview Co-Pilot",
+    description: "Live interview captions and AI answers on your phone, paired from the desktop app.",
     type: "website",
   },
 };
