@@ -196,7 +196,7 @@ export default function HomePage() {
       </header>
 
       <main id="top">
-        <section className="relative overflow-hidden border-b border-white/[0.08]">
+        <section id="download" className="relative overflow-hidden border-b border-white/[0.08]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_72%_42%,rgba(25,201,148,0.08),transparent_42%)]" />
           <div className="pointer-events-none absolute inset-0 opacity-[0.055] [background-image:linear-gradient(rgba(148,163,184,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.24)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
           <div className="relative mx-auto grid w-full max-w-7xl gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-20 lg:py-24">
@@ -255,103 +255,6 @@ export default function HomePage() {
             </div>
 
             <div className="relative mx-auto w-full max-w-[430px] lg:justify-self-end">
-              <div className="relative overflow-hidden rounded-[28px] border border-white/[0.12] bg-[#101314] shadow-[0_30px_80px_-48px_rgba(0,0,0,0.95)]">
-                <div className="mx-auto mt-3 h-1 w-12 rounded-full bg-white/15" />
-                <div className="flex items-center justify-between border-b border-border px-5 py-3 text-[11px] uppercase tracking-[.16em] text-muted-foreground">
-                  <span className="flex items-center gap-2 text-emerald-400">
-                    <span className="size-1.5 rounded-full bg-emerald-400" /> Live
-                  </span>
-                  <span>Room 3d6051</span>
-                </div>
-                <div className="space-y-5 px-5 py-6">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Captions</p>
-                    <p className="mt-2 text-[15px] leading-7">
-                      "...so tell me about a time you had to ship a feature with half the team out sick."
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-[#19C994]/20 bg-[#0B0D0E] p-4">
-                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-emerald-400">
-                      <Bot className="size-3.5" /> AI answer
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Lead with the constraint, then the decision: I cut scope to the checkout path, moved analytics to a
-                      follow-up, and shipped two days early with a written handover.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Ask AI</span>
-                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Story</span>
-                    <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">Follow-up</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="features" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Built for the room you are actually in</h2>
-          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-muted-foreground">
-            One desktop app, one backend, one phone screen. No shared browser tabs, no pop-ups on the call.
-          </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="group rounded-2xl border border-white/[0.08] bg-[#111516] p-5 transition-colors duration-200 hover:border-white/[0.15] hover:bg-[#14191a]">
-                <span className="flex size-10 items-center justify-center rounded-xl border border-[#19C994]/10 bg-[#19C994]/[0.08] text-[#19C994]">
-                  <Icon className="size-5" />
-                </span>
-                <h3 className="mt-4 text-sm font-semibold">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="how" className="border-y border-white/[0.08] bg-white/[0.015]">
-          <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Three steps, one minute</h2>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {STEPS.map((step) => (
-                <div key={step.n} className="rounded-2xl border border-white/[0.08] bg-[#111516] p-6 transition-colors duration-200 hover:border-white/[0.14]">
-                  <span className="font-mono text-xs tracking-[.2em] text-emerald-400">{step.n}</span>
-                  <h3 className="mt-3 text-base font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-10 rounded-2xl border border-white/[0.08] bg-[#0B0D0E] p-6">
-              <p className="text-sm leading-6 text-muted-foreground">
-                <span className="font-semibold text-foreground">Already have a code?</span> Type it above - the room opens
-                with the same captions and AI answers the QR link gives you.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section id="download" className="border-t border-white/[0.08]">
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:py-20">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#19C994]/25 bg-[#19C994]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[.14em] text-[#19C994]">
-                <MonitorDown className="size-3.5" /> Windows app
-              </span>
-              <h2 className="mt-5 text-[clamp(1.8rem,3.4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.04em]">
-                Download Stealth Co-Pilot for your laptop
-              </h2>
-              <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted-foreground">
-                The desktop app creates the room, captures the interviewer&apos;s audio on your own PC and keeps your
-                resume and interview history. One account unlocks the download and signs you in on both devices.
-              </p>
-              <ul className="mt-6 grid gap-2.5 text-sm text-slate-300 sm:grid-cols-2">
-                {["Windows 10 / 11 (64-bit)", "Sign-in required", "Local speech model, no audio upload", "Interview history on your PC"].map((item) => (
-                  <li key={item} className="inline-flex items-center gap-2">
-                    <Check className="size-4 shrink-0 text-[#19C994]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#0E1112] shadow-[0_34px_90px_-46px_rgba(0,0,0,0.98)]">
               <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.045] px-4 py-2.5">
                 <span className="size-2.5 rounded-full bg-[#FF5F57]" />
@@ -404,8 +307,49 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
+            </div>
           </div>
         </section>
+
+        <section id="features" className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Built for the room you are actually in</h2>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-muted-foreground">
+            One desktop app, one backend, one phone screen. No shared browser tabs, no pop-ups on the call.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="group rounded-2xl border border-white/[0.08] bg-[#111516] p-5 transition-colors duration-200 hover:border-white/[0.15] hover:bg-[#14191a]">
+                <span className="flex size-10 items-center justify-center rounded-xl border border-[#19C994]/10 bg-[#19C994]/[0.08] text-[#19C994]">
+                  <Icon className="size-5" />
+                </span>
+                <h3 className="mt-4 text-sm font-semibold">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="how" className="border-y border-white/[0.08] bg-white/[0.015]">
+          <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Three steps, one minute</h2>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {STEPS.map((step) => (
+                <div key={step.n} className="rounded-2xl border border-white/[0.08] bg-[#111516] p-6 transition-colors duration-200 hover:border-white/[0.14]">
+                  <span className="font-mono text-xs tracking-[.2em] text-emerald-400">{step.n}</span>
+                  <h3 className="mt-3 text-base font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-10 rounded-2xl border border-white/[0.08] bg-[#0B0D0E] p-6">
+              <p className="text-sm leading-6 text-muted-foreground">
+                <span className="font-semibold text-foreground">Already have a code?</span> Type it above - the room opens
+                with the same captions and AI answers the QR link gives you.
+              </p>
+            </div>
+          </div>
+        </section>
+
       </main>
 
       <footer className="border-t border-border">
