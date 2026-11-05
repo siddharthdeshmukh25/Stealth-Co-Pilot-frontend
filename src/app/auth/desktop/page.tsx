@@ -15,6 +15,7 @@ export default function DesktopAuthPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const [port, setPort] = useState<string>("");
   const [state, setState] = useState<string>("");
+  const [auto, setAuto] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -24,6 +25,7 @@ export default function DesktopAuthPage() {
     const params = new URLSearchParams(window.location.search);
     setPort(params.get("port") || "");
     setState(params.get("state") || "");
+    setAuto(params.get("auto") === "1");
   }, []);
 
   const handOff = useCallback(async (refreshToken: string, email: string, uid: string) => {
@@ -70,7 +72,7 @@ export default function DesktopAuthPage() {
     return () => { active = false; };
   }, [user, port, handOff]);
 
-  const startGoogle = async () => {
+  const startGoogle = useCallback(async () => {
     setBusy(true);
     setError("");
     if (user) await signOut();
@@ -81,7 +83,17 @@ export default function DesktopAuthPage() {
     } finally {
       setBusy(false);
     }
-  };
+  }, [user, signInWithGoogle, signOut]);
+
+  // The desktop app asks for auto=1: go straight to Google instead of showing a
+  // second "Continue with Google" click. Popups without a gesture are blocked,
+  // so useAuth falls back to the redirect flow, which needs no click at all.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!auto || !port || loading || user || sent || autoStarted.current) return;
+    autoStarted.current = true;
+    void startGoogle();
+  }, [auto, port, loading, user, sent, startGoogle]);
 
   const missingLink = !loading && !port;
 
