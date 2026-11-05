@@ -2,9 +2,21 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
 /** Firebase project used for email/password accounts on the web app and the EXE. */
+// `authDomain` must be this site's own host: the Firebase sign-in helper is proxied
+// through the /__/auth rewrite in next.config.js. When it pointed at
+// firebaseapp.com the helper ran cross-site, and browsers that partition or block
+// third-party storage finished the Google flow without ever storing the session -
+// the page came back signed out with no error.
+function authDomain(): string {
+  const configured = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  if (configured) return configured;
+  if (typeof window !== "undefined" && window.location.host) return window.location.host;
+  return "stealth-co-pilot.firebaseapp.com";
+}
+
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDVWKY0h8eFXuNWnAssorpenLX2UgeQnPM",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "stealth-co-pilot.firebaseapp.com",
+  authDomain: authDomain(),
   projectId: "stealth-co-pilot",
   storageBucket: "stealth-co-pilot.firebasestorage.app",
   messagingSenderId: "79710562638",
