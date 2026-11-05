@@ -732,19 +732,9 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         </div>
       ) : null}
 
-      <div
-        ref={feedBox}
-        onScroll={(event) => {
-          const element = event.currentTarget;
-          const gap = element.scrollHeight - element.scrollTop - element.clientHeight;
-          // A little hysteresis: a 40px nudge must not flip the follow pill on.
-          if (gap < 64 && !followingRef.current) follow(true);
-          else if (gap > 240 && followingRef.current) follow(false);
-        }}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-      >
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-2.5 px-3 py-3 pb-6 sm:px-5">
-        <div className="sticky top-0 z-20 -mx-3 space-y-2 bg-background px-3 pb-2 pt-2 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.85)] sm:-mx-5 sm:px-5">
+      {/* The transcript lives above the feed, not sticky inside it, so answers
+          never slide behind it while scrolling. */}
+      <div className="mx-auto w-full max-w-2xl shrink-0 space-y-2 px-3 pb-2 pt-2 sm:px-5">
         {captionState !== "on" ? (
           <div className="animate-fade-up flex items-start gap-2.5 rounded-2xl border border-rose-500/25 bg-rose-500/10 px-3.5 py-2.5">
             <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 text-rose-300">
@@ -846,8 +836,20 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
             </button>
           ) : null}
         </section>
-        </div>
+      </div>
 
+      <div
+        ref={feedBox}
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          const gap = element.scrollHeight - element.scrollTop - element.clientHeight;
+          // A little hysteresis: a 40px nudge must not flip the follow pill on.
+          if (gap < 64 && !followingRef.current) follow(true);
+          else if (gap > 240 && followingRef.current) follow(false);
+        }}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+      >
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-2.5 px-3 pb-6 pt-1 sm:px-5">
         {/* One answer slot only: each new answer replaces the previous one here,
             and the old ones stay reachable through Answer history. */}
         {answer || busy ? (
