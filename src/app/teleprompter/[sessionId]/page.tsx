@@ -763,7 +763,10 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           </div>
         ) : null}
 
-        <section aria-label="Live interviewer captions" className="glass-flat animate-fade-up overflow-hidden rounded-3xl ring-1 ring-white/[0.04]">
+        <section
+          aria-label="Live interviewer captions"
+          className="animate-fade-up overflow-hidden rounded-3xl border border-border/50 bg-transparent"
+        >
           <SectionHeader
             icon={<Captions size={13} className="text-primary" aria-hidden="true" />}
             label="Live transcript"
