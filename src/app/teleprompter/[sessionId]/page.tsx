@@ -160,6 +160,13 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
   const latestQuestion = useRef("");
   const latestAnswer = useRef("");
   const currentAnswerQuestion = useRef("");
+  // Mirrors the ref as state so the answer card keeps printing the question the
+  // visible answer belongs to, even after the interviewer moves on.
+  const [answerQuestion, setAnswerQuestion] = useState("");
+  const rememberQuestion = useCallback((value: string) => {
+    currentAnswerQuestion.current = value;
+    setAnswerQuestion(value);
+  }, []);
   const optimisticallyArchivedAnswer = useRef("");
 
   latestQuestion.current = question;
@@ -359,7 +366,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         if (lastEvent.question) setQuestion(String(lastEvent.question));
         if (lastEvent.answer) {
           setAnswer(String(lastEvent.answer));
-          currentAnswerQuestion.current = String(lastEvent.question || "");
+          rememberQuestion(String(lastEvent.question || ""));
         }
       }
       if (lastEvent.event === "transcription_empty") setError(String(lastEvent.message || "No clear speech was detected."));
@@ -381,7 +388,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           setHistory((entries) => [entry, ...entries].slice(0, 30));
         }
         optimisticallyArchivedAnswer.current = "";
-        currentAnswerQuestion.current = String(lastEvent.text || latestQuestion.current || "");
+        rememberQuestion(String(lastEvent.text || latestQuestion.current || ""));
         pendingCode.current = CODING_REQUEST.test(currentAnswerQuestion.current);
         resetStream();
         setAnswer("");
@@ -405,7 +412,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         resetStream();
         setAnswer("");
         latestAnswer.current = "";
-        currentAnswerQuestion.current = "";
+        rememberQuestion("");
         setError("");
         setNotice("");
       }
@@ -417,6 +424,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         setAnswer("");
         setQuestion("");
         setNextQuestion("");
+        rememberQuestion("");
         setHistory([]);
         window.localStorage.removeItem(`${HISTORY_KEY}:${sessionId}`);
         setNotice("");
@@ -434,7 +442,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         setError(String(lastEvent.message));
       }
     }
-  }, [eventsVersion, takeEvents, flushStream, resetStream, scheduleFlush, follow, loadEnded, sessionId]);
+  }, [eventsVersion, takeEvents, flushStream, resetStream, scheduleFlush, follow, loadEnded, rememberQuestion, sessionId]);
 
   useEffect(() => {
     if (pendingCode.current && revealCode()) {
@@ -599,8 +607,13 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     }
   };
 
-  const pendingQuestion = answer ? nextQuestion : question;
+  // The answer card already prints the question it answers, so the same text
+  // must never show up again underneath it as "Next question".
+  const activeQuestion = answerQuestion || question;
   const busy = status === "thinking" || status === "streaming";
+  const pendingQuestion = answer || busy
+    ? nextQuestion.trim() && nextQuestion.trim() !== activeQuestion.trim() ? nextQuestion : ""
+    : question;
   const actionsDisabled = !connected || !captions.length || busy;
   const hint = !connected
     ? "Reconnecting to your interview room…"
@@ -877,11 +890,11 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               </div>
             </SectionHeader>
             <div className="px-4 py-3.5" aria-live="polite">
-              {currentAnswerQuestion.current || question ? (
+              {answerQuestion || question ? (
                 <>
                   <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Question</p>
                   <p className="mt-0.5 text-[12.5px] font-bold leading-5 text-foreground/90">
-                    {currentAnswerQuestion.current || question}
+                    {answerQuestion || question}
                   </p>
                   <div className="my-2.5 border-t border-border/50" />
                 </>
