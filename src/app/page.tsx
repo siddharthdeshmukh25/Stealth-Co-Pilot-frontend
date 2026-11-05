@@ -19,7 +19,14 @@ import {
 import AuthDialog, { GoogleMark } from "@/components/AuthDialog";
 import { useAuth } from "@/hooks/useAuth";
 
-const DOWNLOAD_URL = process.env.NEXT_PUBLIC_DOWNLOAD_URL || "/StealthInterviewCoPilot.exe";
+// GitHub always serves the newest release asset behind "latest", so this link
+// never goes stale after a new desktop build is published.
+const DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
+  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot-desktop/releases/latest/download/StealthInterviewCoPilot.exe";
+// Kept in step with desktop-client/src/version.py; the app updates itself in place.
+const DESKTOP_VERSION = "1.1.0";
+const DESKTOP_SIZE = "162 MB";
 const DOWNLOAD_INTENT = "copilot:download-intent";
 
 // Storage can throw in private mode / embedded browsers; the download must still work.
@@ -169,14 +176,6 @@ export default function HomePage() {
                 <GoogleMark size={15} /> <span className="hidden sm:inline">Sign in</span>
               </button>
             )}
-            <a
-              href="#code"
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-white px-3 text-[13px] font-semibold text-[#0B0D0E] transition-colors duration-200 hover:bg-emerald-50 sm:gap-2 sm:px-4 sm:text-sm"
-            >
-              <span className="sm:hidden">Room</span>
-              <span className="hidden sm:inline">Open room</span>
-              <ArrowRight className="size-4" />
-            </a>
           </div>
         </div>
       </header>
@@ -338,30 +337,57 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="rounded-3xl border border-white/[0.09] bg-[#111516] p-6 shadow-[0_30px_80px_-52px_rgba(0,0,0,0.95)] sm:p-7">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#19C994]/15 bg-[#19C994]/10 text-[#19C994]">
-                  <Laptop className="size-5" />
+            <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#0E1112] shadow-[0_34px_90px_-46px_rgba(0,0,0,0.98)]">
+              <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.045] px-4 py-2.5">
+                <span className="size-2.5 rounded-full bg-[#FF5F57]" />
+                <span className="size-2.5 rounded-full bg-[#FEBC2E]" />
+                <span className="size-2.5 rounded-full bg-[#28C840]" />
+                <p className="ml-2 truncate text-[11px] font-medium text-slate-400">Stealth Co-Pilot — Setup</p>
+                <span className="ml-auto rounded-md border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  v{DESKTOP_VERSION}
                 </span>
-                <div>
-                  <p className="text-sm font-semibold">StealthInterviewCoPilot.exe</p>
-                  <p className="text-xs text-muted-foreground">Single-file build · sign in to unlock</p>
-                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={requestDownload}
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#19C994] px-5 text-sm font-semibold text-[#06291F] transition-colors duration-200 hover:bg-[#27d8a4] disabled:opacity-60"
-              >
-                <Download className="size-4" />
-                {user ? "Download for Windows" : "Sign in to download"}
-              </button>
-              <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
-                {user
-                  ? `Signed in as ${user.email}`
-                  : "New here? Google creates your account the first time you sign in."}
-              </p>
+              <div className="p-6 sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#19C994]/15 bg-[#19C994]/10 text-[#19C994]">
+                    <Laptop className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">StealthInterviewCoPilot.exe</p>
+                    <p className="text-xs text-muted-foreground">Windows 10 / 11 · 64-bit · {DESKTOP_SIZE}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 font-mono text-[11px] text-muted-foreground">
+                  <p className="flex items-center justify-between gap-3">
+                    <span>Version</span>
+                    <span className="text-slate-300">{DESKTOP_VERSION} (latest)</span>
+                  </p>
+                  <p className="flex items-center justify-between gap-3">
+                    <span>Updates</span>
+                    <span className="text-slate-300">Automatic, in-app</span>
+                  </p>
+                  <p className="flex items-center justify-between gap-3">
+                    <span>Account</span>
+                    <span className="text-slate-300">Google sign-in</span>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={requestDownload}
+                  className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#19C994] px-5 text-sm font-semibold text-[#06291F] transition-colors duration-200 hover:bg-[#27d8a4] disabled:opacity-60"
+                >
+                  <Download className="size-4" />
+                  {user ? "Download for Windows" : "Sign in to download"}
+                </button>
+                <p className="mt-3 text-center text-[11px] leading-5 text-muted-foreground">
+                  {user
+                    ? `Signed in as ${user.email}`
+                    : "New here? Google creates your account the first time you sign in."}
+                </p>
+              </div>
             </div>
           </div>
         </section>
