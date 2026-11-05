@@ -621,7 +621,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         <div className="absolute right-4 top-4 z-10">
           <ThemeToggle />
         </div>
-        <section className="glass card-lift animate-pop-in relative w-full max-w-md rounded-[30px] p-6 text-center sm:p-8">
+        <section className="glass-flat animate-pop-in relative w-full max-w-md rounded-[30px] p-6 text-center sm:p-8">
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
             <CheckCircle2 size={28} aria-hidden="true" />
           </span>
@@ -668,7 +668,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         <div className="animate-drift absolute -right-24 top-1/4 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
       </div>
 
-      <header className="glass safe-top sticky top-0 z-30 flex shrink-0 items-center justify-between gap-2 rounded-b-2xl px-3 py-2.5 sm:px-5">
+      <header className="glass-flat safe-top sticky top-0 z-30 flex shrink-0 items-center justify-between gap-2 rounded-b-2xl px-3 py-2.5 sm:px-5">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_10px_24px_-12px_var(--glow)]">
             <Bot size={17} aria-hidden="true" />
@@ -750,7 +750,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           </div>
         ) : null}
 
-        <section aria-label="Live interviewer captions" className="glass animate-fade-up overflow-hidden rounded-3xl ring-1 ring-white/[0.04]">
+        <section aria-label="Live interviewer captions" className="glass-flat animate-fade-up overflow-hidden rounded-3xl ring-1 ring-white/[0.04]">
           <SectionHeader
             icon={<Captions size={13} className="text-primary" aria-hidden="true" />}
             label="Live transcript"
@@ -836,7 +836,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           <article
             key={entry.id}
             id={`answer-${entry.id}`}
-            className="glass animate-fade-up overflow-hidden rounded-3xl"
+            className="glass-flat animate-fade-up overflow-hidden rounded-3xl"
           >
             <SectionHeader icon={<Sparkles size={11} className="text-primary" aria-hidden="true" />} label={`Answer ${index + 1}`}>
               <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
@@ -857,7 +857,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         ))}
 
         {answer ? (
-          <section aria-label="Suggested interview response" className="glass card-lift animate-fade-up overflow-hidden rounded-3xl ring-1 ring-primary/20">
+          <section aria-label="Suggested interview response" className="glass-flat animate-fade-up overflow-hidden rounded-3xl ring-1 ring-primary/20">
             <SectionHeader
               icon={<Sparkles size={11} className="text-primary" aria-hidden="true" />}
               label="Suggested response"
@@ -916,7 +916,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         ) : null}
 
         {pendingQuestion ? (
-          <section aria-label="Next interview question" className="glass animate-fade-up overflow-hidden rounded-3xl border-l-2 border-l-primary">
+          <section aria-label="Next interview question" className="glass-flat animate-fade-up overflow-hidden rounded-3xl border-l-2 border-l-primary">
             <SectionHeader
               icon={<Mic size={12} className="text-primary" aria-hidden="true" />}
               label="Next question"
@@ -966,7 +966,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
               scrollToLatest("smooth");
             }}
             aria-label="Jump to latest answer"
-            className="press inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 bg-card px-3 text-[11px] font-bold text-foreground shadow-[0_10px_24px_-16px_rgba(0,0,0,0.55)]"
+            className="press inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 bg-card px-3 text-[11px] font-bold text-foreground"
           >
             <ChevronDown size={13} aria-hidden="true" />
             Jump to latest
@@ -980,7 +980,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
             event.preventDefault();
             submitCodeTopic();
           }}
-          className="glass mx-auto w-full max-w-2xl shrink-0 rounded-t-2xl px-3 py-2.5 sm:rounded-2xl sm:px-4"
+          className="glass-flat mx-auto w-full max-w-2xl shrink-0 rounded-t-2xl px-3 py-2.5 sm:rounded-2xl sm:px-4"
         >
           <label htmlFor="code-topic" className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
             Which code example?
@@ -1173,7 +1173,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
 
       {historyOpen ? (
         <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-md">
-          <header className="glass flex h-16 shrink-0 items-center justify-between gap-3 rounded-b-2xl px-4">
+          <header className="glass-flat flex h-16 shrink-0 items-center justify-between gap-3 rounded-b-2xl px-4">
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card/60 text-primary">
                 <History size={16} aria-hidden="true" />
@@ -1206,7 +1206,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
             <div className="mx-auto max-w-2xl space-y-3">
               {history.length ? (
                 history.map((entry) => (
-                  <article key={entry.id} className="glass rounded-2xl p-3.5">
+                  <article key={entry.id} className="glass-flat rounded-2xl p-3.5">
                     <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Asked</p>
                     <p className="mt-1 text-[13px] font-semibold leading-6 text-foreground">{entry.question}</p>
                     <div className="mt-3 border-t border-border/60 pt-3">

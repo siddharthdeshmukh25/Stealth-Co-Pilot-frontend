@@ -80,6 +80,16 @@
     -webkit-backdrop-filter: blur(22px) saturate(150%);
   }
 
+  /* Same frosted panel without any drop shadow: the interview feed stays flat
+     so nothing lifts or glows while reading. */
+  .glass-flat {
+    background: var(--glass);
+    border: 1px solid var(--glass-line);
+    box-shadow: none;
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+  }
+
   .glass-strong {
     background: color-mix(in oklab, var(--card) 96%, transparent);
     border: 1px solid var(--glass-line);

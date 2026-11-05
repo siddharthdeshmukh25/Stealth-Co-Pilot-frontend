@@ -14,7 +14,7 @@ const secondary =
 
 export default function QuickActionButtons({ onAskAI, onAction, onClear, disabled, hint }: Props) {
   return (
-    <div className="glass safe-bottom z-30 shrink-0 rounded-t-3xl px-3 pt-2.5">
+    <div className="glass-flat safe-bottom z-30 shrink-0 rounded-t-3xl px-3 pt-2.5">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
         {hint ? (
           <p className="text-center text-[10.5px] leading-4 text-muted-foreground" role="status">
