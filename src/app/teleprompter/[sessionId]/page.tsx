@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import {
   Bot,
   Captions,
-  ListChecks,
   CheckCircle2,
   ChevronDown,
   Download,
@@ -503,20 +502,6 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     });
   };
 
-  // The outline chips jump to the matching answer card. Auto-follow pauses for
-  // the jump so a streaming answer cannot drag the reader back down.
-  const jumpToAnswer = (id: number) => {
-    const card = document.getElementById(`answer-${id}`);
-    const feed = feedBox.current;
-    if (!card || !feed) return;
-    if (status === "streaming") follow(false);
-    // Land the card header just below the sticky transcript instead of under it.
-    const sticky = feed.firstElementChild?.firstElementChild as HTMLElement | null;
-    const offset = (sticky?.getBoundingClientRect().height ?? 0) + 12;
-    const top = card.getBoundingClientRect().top - feed.getBoundingClientRect().top + feed.scrollTop - offset;
-    feed.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-  };
-
   const askAI = (action: "standard" | "explain_deeper" | "code_example" = "standard", topic = "") => {
     if (!connected || !captions.length) return;
     const previous = latestAnswer.current.trim();
@@ -846,43 +831,6 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           ) : null}
         </section>
         </div>
-
-        {answeredTurns.length ? (
-          <nav aria-label="Answer outline" className="glass animate-fade-up overflow-hidden rounded-3xl">
-            <SectionHeader
-              icon={<ListChecks size={13} className="text-primary" aria-hidden="true" />}
-              label="Answer outline"
-            >
-              <span className="line-time rounded-full border border-border bg-background/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                {answeredTurns.length} {answeredTurns.length === 1 ? "answer" : "answers"}
-              </span>
-            </SectionHeader>
-            <div className="flex items-center gap-2 overflow-x-auto px-3.5 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {answeredTurns.map((turn, index) => (
-                <button
-                  key={turn.id}
-                  type="button"
-                  onClick={() => jumpToAnswer(turn.id)}
-                  title={turn.question || "Earlier answer"}
-                  className="press inline-flex h-8 max-w-[11.5rem] shrink-0 items-center gap-1.5 rounded-full border border-border bg-background/50 pl-1 pr-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
-                >
-                  <span className="line-time inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-bold text-muted-foreground">
-                    {index + 1}
-                  </span>
-                  <span className="truncate text-[11.5px] font-semibold text-foreground/85">
-                    {turn.question || "Earlier answer"}
-                  </span>
-                </button>
-              ))}
-              {answer ? (
-                <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-2.5 text-[11px] font-bold text-primary ring-1 ring-primary/30">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
-                  Now
-                </span>
-              ) : null}
-            </div>
-          </nav>
-        ) : null}
 
         {answeredTurns.map((entry, index) => (
           <article
