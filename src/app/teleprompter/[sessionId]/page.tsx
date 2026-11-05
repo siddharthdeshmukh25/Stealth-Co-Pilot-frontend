@@ -1,8 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Bot,
   Captions,
+  ListChecks,
   CheckCircle2,
   ChevronDown,
   Download,
@@ -79,6 +81,37 @@ function downloadTextFile(name: string, content: string) {
   link.download = name;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// One header for every card in the room feed: same height, same paddings, same
+// label weight, so the transcript, the outline and the answers line up exactly.
+function SectionHeader({
+  icon,
+  label,
+  live = false,
+  tone = "muted",
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  live?: boolean;
+  tone?: "muted" | "primary";
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-[38px] items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2">
+      <p
+        className={`inline-flex min-w-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] ${
+          tone === "primary" ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {icon}
+        <span className="truncate">{label}</span>
+        {live ? <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" /> : null}
+      </p>
+      {children ? <div className="flex shrink-0 items-center gap-1.5">{children}</div> : null}
+    </div>
+  );
 }
 
 export default function TeleprompterPage({ params }: { params: { sessionId: string } }) {
@@ -470,6 +503,20 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
     });
   };
 
+  // The outline chips jump to the matching answer card. Auto-follow pauses for
+  // the jump so a streaming answer cannot drag the reader back down.
+  const jumpToAnswer = (id: number) => {
+    const card = document.getElementById(`answer-${id}`);
+    const feed = feedBox.current;
+    if (!card || !feed) return;
+    if (status === "streaming") follow(false);
+    // Land the card header just below the sticky transcript instead of under it.
+    const sticky = feed.firstElementChild?.firstElementChild as HTMLElement | null;
+    const offset = (sticky?.getBoundingClientRect().height ?? 0) + 12;
+    const top = card.getBoundingClientRect().top - feed.getBoundingClientRect().top + feed.scrollTop - offset;
+    feed.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
+
   const askAI = (action: "standard" | "explain_deeper" | "code_example" = "standard", topic = "") => {
     if (!connected || !captions.length) return;
     const previous = latestAnswer.current.trim();
@@ -699,7 +746,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
       >
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-2.5 px-3 py-3 pb-6 sm:px-5">
-        <div className="sticky top-0 z-20 -mx-3 space-y-2 bg-background/80 px-3 pb-2 pt-2 backdrop-blur-md sm:-mx-5 sm:px-5">
+        <div className="sticky top-0 z-20 -mx-3 space-y-2 bg-background px-3 pb-2 pt-2 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.85)] sm:-mx-5 sm:px-5">
         {captionState !== "on" ? (
           <div className="animate-fade-up flex items-start gap-2.5 rounded-2xl border border-rose-500/25 bg-rose-500/10 px-3.5 py-2.5">
             <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 text-rose-300">
@@ -719,14 +766,11 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         ) : null}
 
         <section aria-label="Live interviewer captions" className="glass animate-fade-up overflow-hidden rounded-3xl ring-1 ring-white/[0.04]">
-          <div className="flex items-center justify-between gap-2 px-3.5 py-2.5">
-            <p className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              <Captions size={13} className="text-primary" aria-hidden="true" />
-              Live transcript
-              {captionState === "on" && connected ? (
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" />
-              ) : null}
-            </p>
+          <SectionHeader
+            icon={<Captions size={13} className="text-primary" aria-hidden="true" />}
+            label="Live transcript"
+            live={captionState === "on" && connected}
+          >
             <div className="flex shrink-0 items-center gap-1.5">
               <span className="line-time rounded-full border border-border bg-background/50 px-2 py-0.5 text-[10px] text-muted-foreground">
                 {captions.length ? `${captions.length} ${captions.length === 1 ? "line" : "lines"}` : "Automatic"}
@@ -742,7 +786,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 <Download size={13} aria-hidden="true" />
               </button>
             </div>
-          </div>
+          </SectionHeader>
           <div
             ref={captionBox}
             onScroll={(event) => {
@@ -764,8 +808,8 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                       key={caption.id}
                       className={`flex gap-2.5 rounded-xl px-2 py-1.5 transition-colors ${latest ? "bg-primary/[0.06]" : "hover:bg-muted/40"}`}
                     >
-                      <span className="line-time shrink-0 pt-[3px] text-[9.5px] text-muted-foreground/60">{clock(caption.timestamp)}</span>
-                      <p className={`min-w-0 flex-1 text-[13px] leading-[1.55] [overflow-wrap:anywhere] ${latest ? "font-medium text-foreground" : "text-muted-foreground/85"}`}>
+                      <span className="line-time shrink-0 pt-[3px] text-[9.5px] font-medium text-muted-foreground/60">{clock(caption.timestamp)}</span>
+                      <p className={`min-w-0 flex-1 text-[13px] leading-[1.55] [overflow-wrap:anywhere] ${latest ? "font-semibold text-foreground" : "font-medium text-muted-foreground/85"}`}>
                         {caption.text}
                       </p>
                     </li>
@@ -803,22 +847,59 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         </section>
         </div>
 
-        {answeredTurns.map((entry) => (
-          <article key={entry.id} className="glass animate-fade-up overflow-hidden rounded-3xl">
-            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2">
-              <p className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                <Sparkles size={11} className="text-primary" aria-hidden="true" />
-                Answer
-              </p>
-              <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {answeredTurns.length ? (
+          <nav aria-label="Answer outline" className="glass animate-fade-up overflow-hidden rounded-3xl">
+            <SectionHeader
+              icon={<ListChecks size={13} className="text-primary" aria-hidden="true" />}
+              label="Answer outline"
+            >
+              <span className="line-time rounded-full border border-border bg-background/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                {answeredTurns.length} {answeredTurns.length === 1 ? "answer" : "answers"}
+              </span>
+            </SectionHeader>
+            <div className="flex items-center gap-2 overflow-x-auto px-3.5 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {answeredTurns.map((turn, index) => (
+                <button
+                  key={turn.id}
+                  type="button"
+                  onClick={() => jumpToAnswer(turn.id)}
+                  title={turn.question || "Earlier answer"}
+                  className="press inline-flex h-8 max-w-[11.5rem] shrink-0 items-center gap-1.5 rounded-full border border-border bg-background/50 pl-1 pr-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/10"
+                >
+                  <span className="line-time inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-bold text-muted-foreground">
+                    {index + 1}
+                  </span>
+                  <span className="truncate text-[11.5px] font-semibold text-foreground/85">
+                    {turn.question || "Earlier answer"}
+                  </span>
+                </button>
+              ))}
+              {answer ? (
+                <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-2.5 text-[11px] font-bold text-primary ring-1 ring-primary/30">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                  Now
+                </span>
+              ) : null}
+            </div>
+          </nav>
+        ) : null}
+
+        {answeredTurns.map((entry, index) => (
+          <article
+            key={entry.id}
+            id={`answer-${entry.id}`}
+            className="glass animate-fade-up overflow-hidden rounded-3xl"
+          >
+            <SectionHeader icon={<Sparkles size={11} className="text-primary" aria-hidden="true" />} label={`Answer ${index + 1}`}>
+              <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                 Earlier
               </span>
-            </div>
-            <div className="px-3.5 py-3">
+            </SectionHeader>
+            <div className="px-4 py-3.5">
               {entry.question ? (
                 <>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">Question</p>
-                  <p className="mt-0.5 text-[12.5px] font-semibold leading-5 text-foreground/90">{entry.question}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Question</p>
+                  <p className="mt-0.5 text-[12.5px] font-bold leading-5 text-foreground/90">{entry.question}</p>
                   <div className="my-2.5 border-t border-border/50" />
                 </>
               ) : null}
@@ -829,11 +910,11 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
 
         {answer ? (
           <section aria-label="Suggested interview response" className="glass card-lift animate-fade-up overflow-hidden rounded-3xl ring-1 ring-primary/20">
-            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3.5 py-2">
-              <p className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                <Sparkles size={11} className="text-primary" aria-hidden="true" />
-                Suggested response
-              </p>
+            <SectionHeader
+              icon={<Sparkles size={11} className="text-primary" aria-hidden="true" />}
+              label="Suggested response"
+              tone="primary"
+            >
               <div className="flex items-center gap-1">
                 {status === "streaming" ? (
                   <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-300">
@@ -868,12 +949,12 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="px-3.5 py-3" aria-live="polite">
+            </SectionHeader>
+            <div className="px-4 py-3.5" aria-live="polite">
               {currentAnswerQuestion.current || question ? (
                 <>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">Question</p>
-                  <p className="mt-0.5 text-[12.5px] font-semibold leading-5 text-foreground/90">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Question</p>
+                  <p className="mt-0.5 text-[12.5px] font-bold leading-5 text-foreground/90">
                     {currentAnswerQuestion.current || question}
                   </p>
                   <div className="my-2.5 border-t border-border/50" />
@@ -888,13 +969,16 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
 
         {pendingQuestion ? (
           <section aria-label="Next interview question" className="glass animate-fade-up overflow-hidden rounded-3xl border-l-2 border-l-primary">
-            <div className="flex items-center justify-between gap-2 px-3.5 py-2">
-              <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Next question</p>
+            <SectionHeader
+              icon={<Mic size={12} className="text-primary" aria-hidden="true" />}
+              label="Next question"
+              tone="primary"
+            >
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
                 Ask AI
               </span>
-            </div>
-            <p className="px-3.5 pb-3 text-[13px] font-medium leading-6 text-foreground/90">{pendingQuestion}</p>
+            </SectionHeader>
+            <p className="px-4 pb-3.5 pt-2.5 text-[13px] font-semibold leading-6 text-foreground/90">{pendingQuestion}</p>
           </section>
         ) : null}
 
@@ -924,18 +1008,22 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
       </div>
       </div>
 
+      {/* Its own row above the action bar: the pill never covers answer text. */}
       {!following && answer ? (
-        <button
-          type="button"
-          onClick={() => {
-            follow(true);
-            scrollToLatest("smooth");
-          }}
-          className="press absolute bottom-36 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card/95 px-3.5 py-1.5 text-[11px] font-semibold text-foreground shadow-[0_16px_30px_-16px_rgba(0,0,0,0.5)] backdrop-blur-xl"
-        >
-          <ChevronDown size={13} aria-hidden="true" />
-          Jump to latest
-        </button>
+        <div className="flex shrink-0 justify-center px-3 pb-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              follow(true);
+              scrollToLatest("smooth");
+            }}
+            aria-label="Jump to latest answer"
+            className="press inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/40 bg-card px-3 text-[11px] font-bold text-foreground shadow-[0_10px_24px_-16px_rgba(0,0,0,0.55)]"
+          >
+            <ChevronDown size={13} aria-hidden="true" />
+            Jump to latest
+          </button>
+        </div>
       ) : null}
 
       {codeOpen ? (

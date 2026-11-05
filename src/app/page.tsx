@@ -26,7 +26,7 @@ const DOWNLOAD_URL =
   "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot-desktop/releases/latest/download/StealthInterviewCoPilot.exe";
 // Kept in step with desktop-client/src/version.py; the app updates itself in place.
 const DESKTOP_VERSION = "1.1.0";
-const DESKTOP_SIZE = "162 MB";
+const DESKTOP_SIZE = "108 MB";
 const DOWNLOAD_INTENT = "copilot:download-intent";
 
 // Storage can throw in private mode / embedded browsers; the download must still work.
