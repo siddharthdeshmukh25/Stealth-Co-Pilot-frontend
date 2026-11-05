@@ -832,31 +832,9 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
         </section>
         </div>
 
-        {answeredTurns.map((entry, index) => (
-          <article
-            key={entry.id}
-            id={`answer-${entry.id}`}
-            className="glass-flat animate-fade-up overflow-hidden rounded-3xl"
-          >
-            <SectionHeader icon={<Sparkles size={11} className="text-primary" aria-hidden="true" />} label={`Answer ${index + 1}`}>
-              <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                Earlier
-              </span>
-            </SectionHeader>
-            <div className="px-4 py-3.5">
-              {entry.question ? (
-                <>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Question</p>
-                  <p className="mt-0.5 text-[12.5px] font-bold leading-5 text-foreground/90">{entry.question}</p>
-                  <div className="my-2.5 border-t border-border/50" />
-                </>
-              ) : null}
-              <TeleprompterStream answer={entry.answer} fontSize={Math.max(MIN_FONT, fontSize - 2)} />
-            </div>
-          </article>
-        ))}
-
-        {answer ? (
+        {/* One answer slot only: each new answer replaces the previous one here,
+            and the old ones stay reachable through Answer history. */}
+        {answer || busy ? (
           <section aria-label="Suggested interview response" className="glass-flat animate-fade-up overflow-hidden rounded-3xl ring-1 ring-primary/20">
             <SectionHeader
               icon={<Sparkles size={11} className="text-primary" aria-hidden="true" />}
@@ -909,7 +887,14 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
                 </>
               ) : null}
               <div ref={answerContent} className="min-w-0">
-                <TeleprompterStream answer={answer} fontSize={fontSize} streaming={status === "streaming"} />
+                {answer ? (
+                  <TeleprompterStream answer={answer} fontSize={fontSize} streaming={status === "streaming"} />
+                ) : (
+                  <p className="flex items-center gap-2 py-1 text-[12.5px] font-semibold text-muted-foreground">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                    Preparing the answer…
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -930,7 +915,7 @@ export default function TeleprompterPage({ params }: { params: { sessionId: stri
           </section>
         ) : null}
 
-        {!answer && !question && !answeredTurns.length ? (
+        {!answer && !question ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-3xl px-6 py-8 text-center">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-card/60 text-primary">
               <Sparkles size={18} aria-hidden="true" />
