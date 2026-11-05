@@ -10,9 +10,10 @@ import { NextResponse } from "next/server";
  */
 const REPO = "siddharthdeshmukh25/Stealth-Co-Pilot";
 const SETUP_ASSET = "StealthInterviewCoPilot-Setup.exe";
+const VERSIONED_SETUP = /^StealthInterviewCoPilot-Setup-v\d+\.\d+\.\d+\.exe$/i;
 
 const FALLBACK_RELEASE = {
-  version: "1.1.7",
+  version: "1.1.9",
   sizeMb: "108.5",
   filename: SETUP_ASSET,
   downloadUrl: `https://github.com/${REPO}/releases/latest/download/${SETUP_ASSET}`,
@@ -31,15 +32,21 @@ export async function GET() {
       const body = (await response.json()) as { tag_name?: string; assets?: ReleaseAsset[] };
       const tag = (body.tag_name || "").trim();
       const assets = body.assets || [];
-      const setup = assets.find((asset) => asset.name === SETUP_ASSET)
-        || assets.find((asset) => /-Setup-v\d+\.\d+\.\d+\.exe$/i.test(asset.name || ""));
+      // The versioned asset is preferred: its filename lands in the browser's
+      // Downloads folder as …-Setup-v1.1.9.exe, so a second download of the same
+      // build is obvious instead of becoming "…-Setup (2).exe".
+      const setup = assets.find((asset) => VERSIONED_SETUP.test(asset.name || ""))
+        || assets.find((asset) => asset.name === SETUP_ASSET);
       const version = tag.replace(/^v/i, "");
+      const assetName = setup?.name || SETUP_ASSET;
       if (/^\d+\.\d+\.\d+$/.test(version) && setup?.size) {
         release = {
           version,
           sizeMb: (setup.size / (1024 * 1024)).toFixed(1),
-          filename: setup.name || SETUP_ASSET,
-          downloadUrl: `https://github.com/${REPO}/releases/latest/download/${SETUP_ASSET}`,
+          filename: assetName,
+          downloadUrl: VERSIONED_SETUP.test(assetName)
+            ? `https://github.com/${REPO}/releases/download/v${version}/${assetName}`
+            : `https://github.com/${REPO}/releases/latest/download/${assetName}`,
         };
       }
     }

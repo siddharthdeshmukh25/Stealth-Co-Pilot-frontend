@@ -26,7 +26,7 @@ const DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
   "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot/releases/latest/download/StealthInterviewCoPilot-Setup.exe";
 // Replaced at runtime by /api/desktop-release, which reads the newest GitHub tag.
-const FALLBACK_RELEASE = { version: "1.1.7", sizeMb: "108.5", filename: "StealthInterviewCoPilot-Setup.exe", downloadUrl: DOWNLOAD_URL };
+const FALLBACK_RELEASE = { version: "1.1.9", sizeMb: "108.5", filename: "StealthInterviewCoPilot-Setup.exe", downloadUrl: DOWNLOAD_URL };
 type DesktopRelease = typeof FALLBACK_RELEASE;
 const DOWNLOAD_INTENT = "copilot:download-intent";
 
