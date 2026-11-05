@@ -11,12 +11,20 @@ import {
 } from "firebase/auth";
 import { authErrorMessage, firebaseAuth } from "@/lib/firebase";
 
-// Sign-in goes through a full redirect everywhere: popups are blocked outright in
-// in-app browsers, strict privacy modes and many desktop setups, and a blocked
-// popup looked like "nothing happens" when the user clicked Google.
-const POPUP_ONLY_ENVIRONMENTS = new Set([
+// Desktop browsers get the popup: the account picker runs in a window that Google
+// already trusts, and the signed-in session is written by this page itself, so it
+// survives third-party storage blocking. Redirect stays for phones, where popups
+// are unreliable.
+const POPUP_FALLBACK = new Set([
+  "auth/popup-blocked",
   "auth/operation-not-supported-in-this-environment",
   "auth/web-storage-unsupported",
+]);
+
+const SILENT_CODES = new Set([
+  "auth/cancelled-popup-request",
+  "auth/popup-closed-by-user",
+  "auth/user-cancelled",
 ]);
 
 function googleProvider() {
@@ -26,12 +34,14 @@ function googleProvider() {
   return provider;
 }
 
+function prefersRedirect() {
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
 function errorCode(error: unknown) {
   return typeof error === "object" && error && "code" in error ? String((error as { code: unknown }).code) : "";
 }
-
-// Cancelling is a normal user action, not something to shout about.
-const SILENT_CODES = new Set(["auth/cancelled-popup-request", "auth/popup-closed-by-user", "auth/user-cancelled"]);
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -62,16 +72,17 @@ export function useAuth() {
   const signInWithGoogle = useCallback(async () => {
     const auth = firebaseAuth();
     setAuthError("");
-    try {
+    if (prefersRedirect()) {
       await signInWithRedirect(auth, googleProvider());
+      return;
+    }
+    try {
+      await signInWithPopup(auth, googleProvider());
     } catch (error) {
-      if (POPUP_ONLY_ENVIRONMENTS.has(errorCode(error))) {
-        try {
-          await signInWithPopup(auth, googleProvider());
-          return;
-        } catch (popupError) {
-          throw new Error(authErrorMessage(popupError));
-        }
+      if (POPUP_FALLBACK.has(errorCode(error))) {
+        // Popup refused: fall back to a redirect so the click still does something.
+        await signInWithRedirect(auth, googleProvider());
+        return;
       }
       throw new Error(authErrorMessage(error));
     }
