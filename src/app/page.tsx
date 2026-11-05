@@ -208,8 +208,9 @@ export default function HomePage() {
                 Your interview script, right on your <span className="text-[#19C994]">phone.</span>
               </h1>
               <p className="mt-5 max-w-[610px] text-base leading-7 text-slate-400 sm:text-[17px] sm:leading-8">
-                The desktop app hears the interview, the backend writes the captions, and this page shows them on your
-                phone - with one-tap AI answers from your own resume and job description. Your shared screen stays clean.
+                An AI co-pilot that works the interview with you. The desktop app listens to the call, streams every
+                question here as live captions, and turns your resume and the job description into a short,
+                answer-ready reply the moment you tap. It all lands on your phone, so your shared screen stays clean.
               </p>
 
               <form onSubmit={openRoom} id="code" className="mt-9 max-w-xl rounded-2xl border border-white/[0.09] bg-[#141719] p-2 shadow-[0_18px_55px_-42px_rgba(0,0,0,0.8)]">

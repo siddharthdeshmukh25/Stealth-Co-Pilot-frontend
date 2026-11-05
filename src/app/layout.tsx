@@ -2,15 +2,40 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ServiceWorker from "@/components/ServiceWorker";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://stealth-co-pilot.vercel.app";
+const SITE_DESCRIPTION =
+  "An AI co-pilot for your interview: the desktop app listens to the call, live captions land on your phone, and one tap gives you a short, answer-ready reply from your resume and job description.";
+// WhatsApp, Telegram and Slack only render a preview when og:image is an absolute
+// URL with a known size, which is why metadataBase is set and the card lives here.
+const OG_IMAGE = { url: "/og.png", width: 1200, height: 630, alt: "Stealth Interview Co-Pilot - live captions and AI answers on your phone" };
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Stealth Interview Co-Pilot · live captions and AI answers on your phone",
-  description:
-    "Pair your phone with the desktop app and follow the interview through live captions and one-tap AI answers built from your own resume and job description.",
+  description: SITE_DESCRIPTION,
   applicationName: "Stealth Interview Co-Pilot",
+  keywords: [
+    "interview co-pilot",
+    "live interview captions",
+    "AI interview assistant",
+    "interview helper",
+    "real-time transcription",
+  ],
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Stealth Interview Co-Pilot",
-    description: "Live interview captions and AI answers on your phone, paired from the desktop app.",
     type: "website",
+    url: SITE_URL,
+    siteName: "Stealth Interview Co-Pilot",
+    locale: "en_US",
+    title: "Stealth Interview Co-Pilot - live captions & AI answers on your phone",
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Stealth Interview Co-Pilot - live captions & AI answers on your phone",
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
   },
 };
 
