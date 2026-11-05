@@ -3,19 +3,19 @@ import { NextResponse } from "next/server";
 /**
  * Live desktop release details, read straight from GitHub.
  *
- * The release workflow publishes `StealthInterviewCoPilot.exe` (stable name, used
- * by the download button) next to `StealthInterviewCoPilot-vX.Y.Z.exe`. Reading
- * the tag here keeps the version and size on the page in step with the build
- * without another source of truth to update by hand.
+ * Visitors download the Inno Setup wizard (`…-Setup.exe`), which asks for the
+ * licence, install folder, Start Menu group and shortcuts and registers an
+ * uninstaller. The portable `StealthInterviewCoPilot.exe` in the same release is
+ * what the in-app updater patches, so it is deliberately not the page's link.
  */
 const REPO = "siddharthdeshmukh25/Stealth-Co-Pilot";
-const STABLE_ASSET = "StealthInterviewCoPilot.exe";
+const SETUP_ASSET = "StealthInterviewCoPilot-Setup.exe";
 
 const FALLBACK_RELEASE = {
-  version: "1.1.6",
+  version: "1.1.7",
   sizeMb: "108.5",
-  filename: STABLE_ASSET,
-  downloadUrl: `https://github.com/${REPO}/releases/latest/download/${STABLE_ASSET}`,
+  filename: SETUP_ASSET,
+  downloadUrl: `https://github.com/${REPO}/releases/latest/download/${SETUP_ASSET}`,
 };
 
 type ReleaseAsset = { name?: string; size?: number };
@@ -31,14 +31,15 @@ export async function GET() {
       const body = (await response.json()) as { tag_name?: string; assets?: ReleaseAsset[] };
       const tag = (body.tag_name || "").trim();
       const assets = body.assets || [];
-      const stable = assets.find((asset) => asset.name === STABLE_ASSET) || assets.find((asset) => /\.exe$/i.test(asset.name || ""));
+      const setup = assets.find((asset) => asset.name === SETUP_ASSET)
+        || assets.find((asset) => /-Setup-v\d+\.\d+\.\d+\.exe$/i.test(asset.name || ""));
       const version = tag.replace(/^v/i, "");
-      if (/^\d+\.\d+\.\d+$/.test(version) && stable?.size) {
+      if (/^\d+\.\d+\.\d+$/.test(version) && setup?.size) {
         release = {
           version,
-          sizeMb: (stable.size / (1024 * 1024)).toFixed(1),
-          filename: stable.name || STABLE_ASSET,
-          downloadUrl: `https://github.com/${REPO}/releases/latest/download/${STABLE_ASSET}`,
+          sizeMb: (setup.size / (1024 * 1024)).toFixed(1),
+          filename: setup.name || SETUP_ASSET,
+          downloadUrl: `https://github.com/${REPO}/releases/latest/download/${SETUP_ASSET}`,
         };
       }
     }

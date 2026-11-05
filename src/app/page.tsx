@@ -19,14 +19,14 @@ import {
 import AuthDialog, { GoogleMark } from "@/components/AuthDialog";
 import { useAuth } from "@/hooks/useAuth";
 
-// Points at the repo that the release workflow actually publishes to, so the
-// button always hands out the current build (the old `-desktop` repo stopped at
-// v1.1.0 and left visitors on a stale EXE).
+// The release workflow publishes the Inno Setup wizard next to the portable EXE,
+// so the button hands out the setup that asks for folder, shortcuts and licence
+// (the old `-desktop` repo stopped at v1.1.0 and left visitors on a stale EXE).
 const DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
-  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot/releases/latest/download/StealthInterviewCoPilot.exe";
+  "https://github.com/siddharthdeshmukh25/Stealth-Co-Pilot/releases/latest/download/StealthInterviewCoPilot-Setup.exe";
 // Replaced at runtime by /api/desktop-release, which reads the newest GitHub tag.
-const FALLBACK_RELEASE = { version: "1.1.6", sizeMb: "108.5", filename: "StealthInterviewCoPilot.exe", downloadUrl: DOWNLOAD_URL };
+const FALLBACK_RELEASE = { version: "1.1.7", sizeMb: "108.5", filename: "StealthInterviewCoPilot-Setup.exe", downloadUrl: DOWNLOAD_URL };
 type DesktopRelease = typeof FALLBACK_RELEASE;
 const DOWNLOAD_INTENT = "copilot:download-intent";
 
