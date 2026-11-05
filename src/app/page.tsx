@@ -200,7 +200,9 @@ export default function HomePage() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_72%_42%,rgba(25,201,148,0.08),transparent_42%)]" />
           <div className="pointer-events-none absolute inset-0 opacity-[0.055] [background-image:linear-gradient(rgba(148,163,184,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.24)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
           <div className="relative mx-auto grid w-full max-w-7xl gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-20 lg:py-24">
-            <div>
+            {/* min-w-0: grid items default to min-width:auto, so the long Setup
+                filename forced both columns wider than the phone screen. */}
+            <div className="min-w-0">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2 text-xs font-medium text-slate-200">
                 <Sparkles className="size-3.5 text-[#19C994]" /> Interview co-pilot
               </span>
@@ -255,7 +257,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[430px] lg:justify-self-end">
+            <div className="relative mx-auto w-full min-w-0 max-w-[430px] lg:justify-self-end">
             <div className="overflow-hidden rounded-2xl border border-white/[0.12] bg-[#0E1112] shadow-[0_34px_90px_-46px_rgba(0,0,0,0.98)]">
               <div className="flex items-center gap-2 border-b border-white/[0.08] bg-white/[0.045] px-4 py-2.5">
                 <span className="size-2.5 rounded-full bg-[#FF5F57]" />
